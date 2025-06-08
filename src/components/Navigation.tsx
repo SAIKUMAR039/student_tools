@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users, MessageCircle } from 'lucide-react';
+import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users, MessageCircle, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import UserProfile from './UserProfile';
 import type { ActiveTool } from '../App';
@@ -14,6 +14,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
   const { isAuthenticated } = useAuth();
 
   const navItems = [
+    { id: 'dashboard' as ActiveTool, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'home' as ActiveTool, icon: Home, label: 'Home' },
     { id: 'gpa' as ActiveTool, icon: Calculator, label: 'GPA' },
     { id: 'attendance' as ActiveTool, icon: Calendar, label: 'Attendance' },

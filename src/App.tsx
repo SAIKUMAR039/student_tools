@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navigation from './components/Navigation';
 import EmailGate from './components/EmailGate';
 import Home from './components/Home';
+import Dashboard from './components/Dashboard';
 import GPACalculator from './components/GPACalculator';
 import AttendanceCalculator from './components/AttendanceCalculator';
 import StudyTimer from './components/StudyTimer';
@@ -14,16 +15,18 @@ import ExpenseTracker from './components/ExpenseTracker';
 import CourseReviews from './components/CourseReviews';
 import StudentChat from './components/StudentChat';
 
-export type ActiveTool = 'home' | 'gpa' | 'attendance' | 'timer' | 'grades' | 'schedule' | 'flashcards' | 'expenses' | 'reviews' | 'chat';
+export type ActiveTool = 'home' | 'dashboard' | 'gpa' | 'attendance' | 'timer' | 'grades' | 'schedule' | 'flashcards' | 'expenses' | 'reviews' | 'chat';
 
 const AppContent: React.FC = () => {
-  const [activeTool, setActiveTool] = useState<ActiveTool>('home');
+  const [activeTool, setActiveTool] = useState<ActiveTool>('dashboard');
   const { isAuthenticated } = useAuth();
 
   const renderContent = () => {
     switch (activeTool) {
       case 'home':
         return <Home onToolSelect={setActiveTool} />;
+      case 'dashboard':
+        return <Dashboard onToolSelect={setActiveTool} />;
       case 'gpa':
         return <GPACalculator />;
       case 'attendance':
@@ -43,7 +46,7 @@ const AppContent: React.FC = () => {
       case 'chat':
         return <StudentChat />;
       default:
-        return <Home onToolSelect={setActiveTool} />;
+        return <Dashboard onToolSelect={setActiveTool} />;
     }
   };
 
@@ -54,9 +57,11 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="relative min-h-screen">
-        <Navigation activeTool={activeTool} onToolSelect={setActiveTool} />
+        {activeTool !== 'home' && activeTool !== 'dashboard' && (
+          <Navigation activeTool={activeTool} onToolSelect={setActiveTool} />
+        )}
         
-        <main className="pb-20 lg:pb-8">
+        <main className={activeTool !== 'home' && activeTool !== 'dashboard' ? 'pb-20 lg:pb-8' : ''}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTool}
