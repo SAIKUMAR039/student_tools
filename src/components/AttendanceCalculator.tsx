@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useDataTracker } from '../utils/DataTracker';
 
 interface AttendanceRecord {
   id: string;
@@ -13,6 +14,48 @@ const AttendanceCalculator: React.FC = () => {
   const [records, setRecords] = useState<AttendanceRecord[]>([
     { id: '1', course: '', totalClasses: 0, attendedClasses: 0 }
   ]);
+  const dataTracker = useDataTracker();
+
+  useEffect(() => {
+    // Track tool usage when component mounts
+    dataTracker.trackToolUsage('attendance');
+    
+    // Load saved data
+    loadSavedData();
+  }, []);
+
+  useEffect(() => {
+    // Auto-save data when records change
+    if (records.some(record => record.course && record.totalClasses > 0)) {
+      saveData();
+    }
+  }, [records]);
+
+  const loadSavedData = async () => {
+    try {
+      const savedData = await dataTracker.getUserData('attendance');
+      if (savedData && savedData.length > 0) {
+        // Get the most recent data
+        const latestData = savedData[savedData.length - 1];
+        if (latestData.records) {
+          setRecords(latestData.records);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved data:', error);
+    }
+  };
+
+  const saveData = async () => {
+    try {
+      const validRecords = records.filter(record => record.course && record.totalClasses > 0);
+      if (validRecords.length > 0) {
+        await dataTracker.saveAttendanceData(validRecords);
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
+  };
 
   const addRecord = () => {
     const newRecord: AttendanceRecord = {

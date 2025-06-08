@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, Timer, Coffee, BookOpen } from 'lucide-react';
+import { useDataTracker } from '../utils/DataTracker';
 
 const StudyTimer: React.FC = () => {
   const [minutes, setMinutes] = useState(25);
@@ -9,10 +10,19 @@ const StudyTimer: React.FC = () => {
   const [isBreak, setIsBreak] = useState(false);
   const [sessions, setSessions] = useState(0);
   const [totalStudyTime, setTotalStudyTime] = useState(0);
+  const dataTracker = useDataTracker();
 
   const workTime = 25 * 60; // 25 minutes
   const shortBreak = 5 * 60; // 5 minutes
   const longBreak = 15 * 60; // 15 minutes
+
+  useEffect(() => {
+    // Track tool usage when component mounts
+    dataTracker.trackToolUsage('timer');
+    
+    // Load saved data
+    loadSavedData();
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -32,11 +42,16 @@ const StudyTimer: React.FC = () => {
       
       if (!isBreak) {
         // Work session completed
-        setSessions(prev => prev + 1);
-        setTotalStudyTime(prev => prev + workTime);
+        const newSessions = sessions + 1;
+        const newTotalTime = totalStudyTime + workTime;
+        setSessions(newSessions);
+        setTotalStudyTime(newTotalTime);
+        
+        // Save completed session data
+        saveSessionData('work', workTime / 60, true, newSessions, newTotalTime / 60);
         
         // Start break
-        if ((sessions + 1) % 4 === 0) {
+        if (newSessions % 4 === 0) {
           // Long break after 4 sessions
           setMinutes(Math.floor(longBreak / 60));
           setSeconds(longBreak % 60);
@@ -51,11 +66,41 @@ const StudyTimer: React.FC = () => {
         setMinutes(Math.floor(workTime / 60));
         setSeconds(workTime % 60);
         setIsBreak(false);
+        
+        // Save break data
+        const breakDuration = sessions % 4 === 0 ? longBreak : shortBreak;
+        saveSessionData('break', breakDuration / 60, true, sessions, totalStudyTime / 60);
       }
     }
 
     return () => clearInterval(interval);
-  }, [isActive, minutes, seconds, isBreak, sessions]);
+  }, [isActive, minutes, seconds, isBreak, sessions, totalStudyTime]);
+
+  const loadSavedData = async () => {
+    try {
+      const savedData = await dataTracker.getUserData('timer');
+      if (savedData && savedData.length > 0) {
+        // Get the most recent data
+        const latestData = savedData[savedData.length - 1];
+        if (latestData['Total Sessions']) {
+          setSessions(latestData['Total Sessions']);
+        }
+        if (latestData['Total Study Time']) {
+          setTotalStudyTime(latestData['Total Study Time'] * 60); // Convert back to seconds
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved data:', error);
+    }
+  };
+
+  const saveSessionData = async (sessionType: string, duration: number, completed: boolean, totalSessions: number, totalStudyTimeMinutes: number) => {
+    try {
+      await dataTracker.saveTimerData(sessionType, duration, completed, totalSessions, totalStudyTimeMinutes);
+    } catch (error) {
+      console.error('Error saving session data:', error);
+    }
+  };
 
   const toggleTimer = () => {
     setIsActive(!isActive);

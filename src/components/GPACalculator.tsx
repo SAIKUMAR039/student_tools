@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Calculator } from 'lucide-react';
+import { useDataTracker } from '../utils/DataTracker';
 
 interface Course {
   id: string;
@@ -14,12 +15,58 @@ const GPACalculator: React.FC = () => {
     { id: '1', name: '', credits: 3, grade: '' }
   ]);
   const [gpa, setGPA] = useState<number | null>(null);
+  const dataTracker = useDataTracker();
 
   const gradePoints: { [key: string]: number } = {
     'A+': 4.0, 'A': 4.0, 'A-': 3.7,
     'B+': 3.3, 'B': 3.0, 'B-': 2.7,
     'C+': 2.3, 'C': 2.0, 'C-': 1.7,
     'D+': 1.3, 'D': 1.0, 'F': 0.0
+  };
+
+  useEffect(() => {
+    // Track tool usage when component mounts
+    dataTracker.trackToolUsage('gpa');
+    
+    // Load saved data
+    loadSavedData();
+  }, []);
+
+  useEffect(() => {
+    calculateGPA();
+  }, [courses]);
+
+  useEffect(() => {
+    // Auto-save data when courses or GPA changes
+    if (courses.some(course => course.name && course.grade) && gpa !== null) {
+      saveData();
+    }
+  }, [courses, gpa]);
+
+  const loadSavedData = async () => {
+    try {
+      const savedData = await dataTracker.getUserData('gpa');
+      if (savedData && savedData.length > 0) {
+        // Get the most recent data
+        const latestData = savedData[savedData.length - 1];
+        if (latestData.courses) {
+          setCourses(latestData.courses);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved data:', error);
+    }
+  };
+
+  const saveData = async () => {
+    try {
+      const validCourses = courses.filter(course => course.name && course.grade);
+      if (validCourses.length > 0 && gpa !== null) {
+        await dataTracker.saveGPAData(validCourses, gpa);
+      }
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
   };
 
   const addCourse = () => {
@@ -60,10 +107,6 @@ const GPACalculator: React.FC = () => {
     
     setGPA(totalPoints / totalCredits);
   };
-
-  React.useEffect(() => {
-    calculateGPA();
-  }, [courses]);
 
   return (
     <div className="pt-24 lg:pt-32 px-4 max-w-4xl mx-auto">
