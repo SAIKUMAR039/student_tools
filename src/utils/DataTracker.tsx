@@ -15,7 +15,7 @@ class DataTracker {
 
   constructor() {
     // Replace with your actual Google Apps Script URL
-    this.googleScriptUrl = 'https://script.google.com/macros/s/AKfycbyD7Q7DMJAMlo0f8eo8EKSQwFDPwx-DGMVebUYeYrv2VCTWa5B2CHtdFvKi5_rp5hnNsQ/exec';
+    this.googleScriptUrl = 'https://script.google.com/macros/s/AKfycby6hguPESTrVvdf4IhG9PAp1iM2TYeQwLIDWlpCDERfCy_IRb4YaRSqx2xwPUtCS1plLw/exec';
     
     // Listen for online/offline events
     window.addEventListener('online', () => {
