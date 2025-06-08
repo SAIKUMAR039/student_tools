@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users } from 'lucide-react';
+import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users, MessageCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import UserProfile from './UserProfile';
 import type { ActiveTool } from '../App';
@@ -67,6 +67,25 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
         </motion.div>
       </nav>
 
+      {/* Quick Chat Button - Desktop */}
+      <div className="hidden lg:block fixed top-6 left-6 z-50">
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onClick={() => onToolSelect('chat')}
+          className={`glass-card rounded-2xl p-4 shadow-sm transition-all duration-200 ${
+            activeTool === 'chat'
+              ? 'bg-blue-50 border-blue-200 text-blue-600'
+              : 'hover:bg-gray-50 text-gray-600 hover:text-blue-600'
+          }`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          title="Student Chat"
+        >
+          <MessageCircle size={24} />
+        </motion.button>
+      </div>
+
       {/* User Profile - Desktop */}
       <div className="hidden lg:block fixed top-6 right-6 z-50">
         <UserProfile />
@@ -105,6 +124,24 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
           </div>
         </motion.div>
       </nav>
+
+      {/* Quick Chat Button - Mobile */}
+      <div className="lg:hidden fixed bottom-20 right-4 z-50">
+        <motion.button
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          onClick={() => onToolSelect('chat')}
+          className={`glass-card rounded-full p-4 shadow-lg transition-all duration-200 ${
+            activeTool === 'chat'
+              ? 'bg-blue-500 text-white'
+              : 'bg-white text-blue-600 hover:bg-blue-50'
+          }`}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <MessageCircle size={24} />
+        </motion.button>
+      </div>
 
       {/* User Profile - Mobile */}
       <div className="lg:hidden fixed top-4 right-4 z-50">
