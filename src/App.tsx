@@ -54,14 +54,16 @@ const AppContent: React.FC = () => {
     return <EmailGate />;
   }
 
+  const isDashboardOrHome = activeTool === 'dashboard' || activeTool === 'home';
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen ${isDashboardOrHome ? 'bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600' : 'bg-gray-50'}`}>
       <div className="relative min-h-screen">
-        {activeTool !== 'home' && activeTool !== 'dashboard' && (
+        {!isDashboardOrHome && (
           <Navigation activeTool={activeTool} onToolSelect={setActiveTool} />
         )}
         
-        <main className={activeTool !== 'home' && activeTool !== 'dashboard' ? 'pb-20 lg:pb-8' : ''}>
+        <main className={!isDashboardOrHome ? 'pb-20 lg:pb-8' : ''}>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTool}

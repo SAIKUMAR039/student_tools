@@ -38,7 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="glass-card rounded-2xl px-2 py-2 shadow-sm"
+          className="glass-card rounded-2xl px-2 py-2 shadow-lg border border-white/20"
         >
           <div className="flex space-x-1">
             {navItems.map((item) => {
@@ -51,8 +51,8 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                   onClick={() => onToolSelect(item.id)}
                   className={`relative px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                     isActive 
-                      ? 'text-blue-600 bg-blue-50' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-white bg-white/20 shadow-lg' 
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -61,6 +61,14 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                     <Icon size={18} />
                     <span className="text-sm">{item.label}</span>
                   </div>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-white/20 rounded-xl"
+                      initial={false}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
                 </motion.button>
               );
             })}
@@ -74,10 +82,10 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           onClick={() => onToolSelect('chat')}
-          className={`glass-card rounded-2xl p-4 shadow-sm transition-all duration-200 ${
+          className={`glass-card rounded-2xl p-4 shadow-lg border border-white/20 transition-all duration-200 ${
             activeTool === 'chat'
-              ? 'bg-blue-50 border-blue-200 text-blue-600'
-              : 'hover:bg-gray-50 text-gray-600 hover:text-blue-600'
+              ? 'bg-white/20 text-white'
+              : 'hover:bg-white/10 text-white/70 hover:text-white'
           }`}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -97,10 +105,10 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="glass-card border-t border-gray-200/50 px-2 py-2 overflow-x-auto"
+          className="glass-card border-t border-white/20 px-2 py-2 overflow-x-auto"
         >
           <div className="flex space-x-1 min-w-max px-2">
-            {navItems.map((item) => {
+            {navItems.slice(0, 6).map((item) => {
               const Icon = item.icon;
               const isActive = activeTool === item.id;
               
@@ -110,8 +118,8 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                   onClick={() => onToolSelect(item.id)}
                   className={`relative p-3 rounded-xl transition-all duration-200 flex-shrink-0 ${
                     isActive 
-                      ? 'text-blue-600 bg-blue-50' 
-                      : 'text-gray-600'
+                      ? 'text-white bg-white/20' 
+                      : 'text-white/70'
                   }`}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -119,6 +127,14 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                     <Icon size={20} />
                     <span className="text-xs mt-1 font-medium">{item.label}</span>
                   </div>
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeMobileTab"
+                      className="absolute inset-0 bg-white/20 rounded-xl"
+                      initial={false}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
                 </motion.button>
               );
             })}
@@ -132,10 +148,10 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           onClick={() => onToolSelect('chat')}
-          className={`glass-card rounded-full p-4 shadow-lg transition-all duration-200 ${
+          className={`glass-card rounded-full p-4 shadow-lg border border-white/20 transition-all duration-200 ${
             activeTool === 'chat'
-              ? 'bg-blue-500 text-white'
-              : 'bg-white text-blue-600 hover:bg-blue-50'
+              ? 'bg-white/20 text-white'
+              : 'bg-white/10 text-white hover:bg-white/20'
           }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}

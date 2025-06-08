@@ -19,6 +19,8 @@
 @layer components {
   .glass-card {
     @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-xl;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
   
   .glass-card-hover {
@@ -44,9 +46,10 @@
     background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
     border-radius: inherit;
     pointer-events: none;
+    z-index: -1;
   }
 
-  /* Smooth scrollbar */
+  /* Custom scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }
@@ -119,24 +122,79 @@
       box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
     }
   }
+
+  /* Shimmer effect */
+  .shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Smooth transitions */
+  .smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Focus styles */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium px-6 py-3 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl;
+  }
+
+  .btn-secondary {
+    @apply bg-white/20 text-white font-medium px-6 py-3 rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30;
+  }
+
+  .btn-ghost {
+    @apply text-white/70 hover:text-white hover:bg-white/10 font-medium px-4 py-2 rounded-lg transition-all duration-200;
+  }
 }
 
-/* Custom scrollbar for the entire page */
+/* Global scrollbar styles */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(96, 165, 250, 0.5);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(96, 165, 250, 0.7);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Selection styles */
@@ -148,4 +206,61 @@
 ::-moz-selection {
   background: rgba(96, 165, 250, 0.3);
   color: white;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .glass-card {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animated-bg,
+  .float,
+  .pulse-glow,
+  .shimmer {
+    animation: none;
+  }
+  
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .glass-card {
+    @apply bg-white/20 border-white/40;
+  }
+  
+  .text-white\/70 {
+    @apply text-white/90;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .glass-card {
+    @apply bg-black/20 border-white/10;
+  }
+}
+
+/* Print styles */
+@media print {
+  .glass-card {
+    @apply bg-white border-gray-300 shadow-none;
+  }
+  
+  .text-white {
+    @apply text-black;
+  }
+  
+  .bg-gradient-to-br {
+    @apply bg-white;
+  }
 }
