@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Folder, File, Search, Grid, List, SortAsc, SortDesc,
   Download, Trash2, Eye, Share2, MoreVertical, Filter,
-  Calendar, FileText, Image, Video, Music, Archive
+  Calendar, FileText, Image, Video, Music, Archive, X
 } from 'lucide-react';
 import { FileManager as FileManagerLib, FileUploadResult } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
