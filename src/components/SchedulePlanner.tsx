@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Plus, Trash2, Clock, MapPin, Edit3, Check, X } from 'lucide-react';
+import { BookOpen, Plus, Trash2, Clock, MapPin, Edit3, Check, X, Calendar } from 'lucide-react';
 
 interface ScheduleItem {
   id: string;

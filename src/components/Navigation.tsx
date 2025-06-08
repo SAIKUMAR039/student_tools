@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen } from 'lucide-react';
+import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import UserProfile from './UserProfile';
 import type { ActiveTool } from '../App';
@@ -20,6 +20,9 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
     { id: 'timer' as ActiveTool, icon: Timer, label: 'Timer' },
     { id: 'grades' as ActiveTool, icon: TrendingUp, label: 'Grades' },
     { id: 'schedule' as ActiveTool, icon: BookOpen, label: 'Schedule' },
+    { id: 'flashcards' as ActiveTool, icon: Brain, label: 'Flashcards' },
+    { id: 'expenses' as ActiveTool, icon: DollarSign, label: 'Budget' },
+    { id: 'reviews' as ActiveTool, icon: MessageSquare, label: 'Reviews' },
   ];
 
   if (!isAuthenticated) {
@@ -80,9 +83,9 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white/90 backdrop-blur-xl border-t border-white/20 px-2 py-2"
+          className="bg-white/90 backdrop-blur-xl border-t border-white/20 px-2 py-2 overflow-x-auto"
         >
-          <div className="flex justify-around">
+          <div className="flex space-x-1 min-w-max">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTool === item.id;
@@ -91,7 +94,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                 <motion.button
                   key={item.id}
                   onClick={() => onToolSelect(item.id)}
-                  className={`relative p-3 rounded-xl transition-colors ${
+                  className={`relative p-3 rounded-xl transition-colors flex-shrink-0 ${
                     isActive 
                       ? 'text-white' 
                       : 'text-gray-600'

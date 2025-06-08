@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, Plus, Trash2, Edit3, Check, X } from 'lucide-react';
+import { TrendingUp, Plus, Trash2, Edit3, Check, X, BookOpen } from 'lucide-react';
 
 interface Assignment {
   id: string;

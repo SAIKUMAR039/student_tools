@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, Calendar, Timer, TrendingUp, BookOpen, GraduationCap } from 'lucide-react';
+import { Calculator, Calendar, Timer, TrendingUp, BookOpen, GraduationCap, Brain, DollarSign, MessageSquare } from 'lucide-react';
 import Newsletter from './Newsletter';
 import type { ActiveTool } from '../App';
 
@@ -45,6 +45,27 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
       icon: BookOpen,
       gradient: 'from-indigo-500 to-purple-500',
     },
+    {
+      id: 'flashcards' as ActiveTool,
+      title: 'Flashcard Study',
+      description: 'Create and study flashcards for better memory retention',
+      icon: Brain,
+      gradient: 'from-violet-500 to-purple-500',
+    },
+    {
+      id: 'expenses' as ActiveTool,
+      title: 'Budget Tracker',
+      description: 'Track your student expenses and manage your budget',
+      icon: DollarSign,
+      gradient: 'from-green-500 to-teal-500',
+    },
+    {
+      id: 'reviews' as ActiveTool,
+      title: 'Course Reviews',
+      description: 'Share and discover honest reviews about courses',
+      icon: MessageSquare,
+      gradient: 'from-blue-500 to-indigo-500',
+    },
   ];
 
   const containerVariants = {
@@ -85,10 +106,10 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
           <GraduationCap size={60} className="text-blue-600" />
         </motion.div>
         <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          Student Tools
+          AcademicFlow
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Essential academic tools designed to help you succeed in your studies and manage your academic life efficiently.
+          The complete academic success platform designed to help you excel in your studies and manage your academic life efficiently.
         </p>
       </motion.div>
 
@@ -96,7 +117,7 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16"
       >
         {tools.map((tool, index) => {
           const Icon = tool.icon;

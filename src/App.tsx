@@ -9,8 +9,11 @@ import AttendanceCalculator from './components/AttendanceCalculator';
 import StudyTimer from './components/StudyTimer';
 import GradeTracker from './components/GradeTracker';
 import SchedulePlanner from './components/SchedulePlanner';
+import FlashcardStudy from './components/FlashcardStudy';
+import ExpenseTracker from './components/ExpenseTracker';
+import CourseReviews from './components/CourseReviews';
 
-export type ActiveTool = 'home' | 'gpa' | 'attendance' | 'timer' | 'grades' | 'schedule';
+export type ActiveTool = 'home' | 'gpa' | 'attendance' | 'timer' | 'grades' | 'schedule' | 'flashcards' | 'expenses' | 'reviews';
 
 const AppContent: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ActiveTool>('home');
@@ -30,6 +33,12 @@ const AppContent: React.FC = () => {
         return <GradeTracker />;
       case 'schedule':
         return <SchedulePlanner />;
+      case 'flashcards':
+        return <FlashcardStudy />;
+      case 'expenses':
+        return <ExpenseTracker />;
+      case 'reviews':
+        return <CourseReviews />;
       default:
         return <Home onToolSelect={setActiveTool} />;
     }
