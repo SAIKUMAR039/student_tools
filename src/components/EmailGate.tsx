@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Send, CheckCircle, AlertCircle, Lock, GraduationCap } from 'lucide-react';
+import { Mail, Send, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const EmailGate: React.FC = () => {
@@ -46,53 +46,60 @@ const EmailGate: React.FC = () => {
     }
   };
 
+  const features = [
+    'GPA Calculator',
+    'Attendance Tracker', 
+    'Study Timer',
+    'Grade Tracker',
+    'Schedule Planner',
+    'Flashcard Study',
+    'Budget Tracker',
+    'Course Reviews'
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full"
       >
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-lg border border-white/20">
+        <div className="glass-card rounded-3xl p-8 shadow-sm">
           <div className="text-center mb-8">
             <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              className="inline-block mb-4"
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="inline-block mb-6"
             >
-              <div className="relative">
-                <GraduationCap size={48} className="text-blue-600" />
-                <div className="absolute -top-1 -right-1 bg-orange-500 rounded-full p-1">
-                  <Lock size={16} className="text-white" />
-                </div>
+              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
+                <Mail size={32} className="text-blue-600" />
               </div>
             </motion.div>
-            <h1 className="text-2xl lg:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Access Student Tools
+            
+            <h1 className="text-2xl lg:text-3xl font-light text-gray-900 mb-3">
+              Welcome to <span className="font-medium text-blue-600">AcademicFlow</span>
             </h1>
-            <p className="text-gray-600">
-              Enter your email to unlock all academic tools and features
+            <p className="text-gray-600 font-light">
+              Enter your email to access all academic tools and features
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-3">
                 Email Address
               </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  disabled={status === 'loading'}
-                  required
-                />
-              </div>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                disabled={status === 'loading'}
+                required
+              />
             </div>
 
             <motion.button
@@ -100,7 +107,7 @@ const EmailGate: React.FC = () => {
               disabled={status === 'loading' || !email}
               whileHover={{ scale: status === 'loading' ? 1 : 1.02 }}
               whileTap={{ scale: status === 'loading' ? 1 : 0.98 }}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+              className="w-full bg-blue-600 text-white py-4 rounded-2xl font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               <AnimatePresence mode="wait">
                 {status === 'loading' ? (
@@ -126,8 +133,8 @@ const EmailGate: React.FC = () => {
                     exit={{ opacity: 0 }}
                     className="flex items-center space-x-2"
                   >
-                    <Send size={20} />
                     <span>Access Tools</span>
+                    <ArrowRight size={20} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -139,16 +146,16 @@ const EmailGate: React.FC = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className={`p-3 rounded-lg flex items-center space-x-2 ${
+                  className={`p-4 rounded-2xl flex items-center space-x-3 ${
                     status === 'error' 
                       ? 'bg-red-50 text-red-700 border border-red-200' 
                       : 'bg-green-50 text-green-700 border border-green-200'
                   }`}
                 >
                   {status === 'error' ? (
-                    <AlertCircle size={16} />
+                    <AlertCircle size={20} />
                   ) : (
-                    <CheckCircle size={16} />
+                    <CheckCircle size={20} />
                   )}
                   <span className="text-sm">{message}</span>
                 </motion.div>
@@ -156,38 +163,28 @@ const EmailGate: React.FC = () => {
             </AnimatePresence>
           </form>
 
-          <div className="mt-8 space-y-4">
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-3">What you'll get access to:</h3>
-              <div className="space-y-2 text-sm text-gray-600">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={16} className="text-green-500" />
-                  <span>GPA Calculator</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={16} className="text-green-500" />
-                  <span>Attendance Tracker</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={16} className="text-green-500" />
-                  <span>Study Timer</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={16} className="text-green-500" />
-                  <span>Grade Tracker</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle size={16} className="text-green-500" />
-                  <span>Schedule Planner</span>
-                </div>
-              </div>
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <h3 className="text-sm font-medium text-gray-900 mb-4">What you'll get access to:</h3>
+            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={feature}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * index }}
+                  className="flex items-center space-x-2"
+                >
+                  <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
+                  <span>{feature}</span>
+                </motion.div>
+              ))}
             </div>
+          </div>
 
-            <div className="text-center">
-              <p className="text-xs text-gray-500">
-                We respect your privacy. Your email is only used for access and updates.
-              </p>
-            </div>
+          <div className="text-center mt-6">
+            <p className="text-xs text-gray-500">
+              We respect your privacy. Your email is only used for access and updates.
+            </p>
           </div>
         </div>
       </motion.div>

@@ -36,9 +36,9 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white/80 backdrop-blur-xl rounded-2xl px-6 py-3 shadow-lg border border-white/20"
+          className="glass-card rounded-2xl px-2 py-2 shadow-sm"
         >
-          <div className="flex space-x-2">
+          <div className="flex space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTool === item.id;
@@ -47,22 +47,15 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                 <motion.button
                   key={item.id}
                   onClick={() => onToolSelect(item.id)}
-                  className={`relative px-4 py-2 rounded-xl font-medium transition-colors ${
+                  className={`relative px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
                     isActive 
-                      ? 'text-white' 
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'text-blue-600 bg-blue-50' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <div className="relative flex items-center space-x-2">
+                  <div className="flex items-center space-x-2">
                     <Icon size={18} />
                     <span className="text-sm">{item.label}</span>
                   </div>
@@ -83,9 +76,9 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white/90 backdrop-blur-xl border-t border-white/20 px-2 py-2 overflow-x-auto"
+          className="glass-card border-t border-gray-200/50 px-2 py-2 overflow-x-auto"
         >
-          <div className="flex space-x-1 min-w-max">
+          <div className="flex space-x-1 min-w-max px-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTool === item.id;
@@ -94,23 +87,16 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
                 <motion.button
                   key={item.id}
                   onClick={() => onToolSelect(item.id)}
-                  className={`relative p-3 rounded-xl transition-colors flex-shrink-0 ${
+                  className={`relative p-3 rounded-xl transition-all duration-200 flex-shrink-0 ${
                     isActive 
-                      ? 'text-white' 
+                      ? 'text-blue-600 bg-blue-50' 
                       : 'text-gray-600'
                   }`}
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeMobileTab"
-                      className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <div className="relative flex flex-col items-center">
+                  <div className="flex flex-col items-center">
                     <Icon size={20} />
-                    <span className="text-xs mt-1">{item.label}</span>
+                    <span className="text-xs mt-1 font-medium">{item.label}</span>
                   </div>
                 </motion.button>
               );

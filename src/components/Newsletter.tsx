@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Send, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 
 const Newsletter: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -31,7 +31,7 @@ const Newsletter: React.FC = () => {
         body: JSON.stringify({
           email: email,
           timestamp: new Date().toISOString(),
-          source: 'student-tools-website'
+          source: 'academicflow-website'
         })
       });
 
@@ -63,102 +63,106 @@ const Newsletter: React.FC = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 text-white"
+      className="glass-card rounded-3xl p-8 lg:p-12 text-center"
     >
-      <div className="text-center mb-6">
+      <div className="max-w-2xl mx-auto">
         <motion.div
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          className="inline-block mb-4"
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          className="inline-block mb-6"
         >
-          <Mail size={48} className="text-white" />
+          <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
+            <Mail size={32} className="text-blue-600" />
+          </div>
         </motion.div>
-        <h2 className="text-2xl lg:text-3xl font-bold mb-2">
+        
+        <h2 className="text-2xl lg:text-3xl font-light text-gray-900 mb-4">
           Stay Updated
         </h2>
-        <p className="text-blue-100 max-w-md mx-auto">
-          Get notified about new study tools, features, and productivity tips to help you succeed academically.
+        <p className="text-gray-600 mb-8 font-light leading-relaxed">
+          Get notified about new study tools, features, and productivity tips 
+          to help you succeed academically.
         </p>
-      </div>
 
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email address"
-              className="w-full px-4 py-3 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-white focus:ring-opacity-50 focus:outline-none transition-all"
-              disabled={status === 'loading'}
-            />
-          </div>
-          <motion.button
-            type="submit"
-            disabled={status === 'loading' || !email}
-            whileHover={{ scale: status === 'loading' ? 1 : 1.05 }}
-            whileTap={{ scale: status === 'loading' ? 1 : 0.95 }}
-            className="px-6 py-3 bg-white text-blue-600 rounded-xl font-medium hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-          >
-            <AnimatePresence mode="wait">
-              {status === 'loading' ? (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center space-x-2"
-                >
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"
-                  />
-                  <span>Subscribing...</span>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="submit"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex items-center space-x-2"
-                >
-                  <Send size={16} />
-                  <span>Subscribe</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        </div>
-
-        <AnimatePresence>
-          {message && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className={`mt-4 p-3 rounded-lg flex items-center space-x-2 ${
-                status === 'success' 
-                  ? 'bg-green-500 bg-opacity-20 text-green-100' 
-                  : 'bg-red-500 bg-opacity-20 text-red-100'
-              }`}
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                disabled={status === 'loading'}
+              />
+            </div>
+            <motion.button
+              type="submit"
+              disabled={status === 'loading' || !email}
+              whileHover={{ scale: status === 'loading' ? 1 : 1.02 }}
+              whileTap={{ scale: status === 'loading' ? 1 : 0.98 }}
+              className="px-6 py-4 bg-blue-600 text-white rounded-2xl font-medium hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
-              {status === 'success' ? (
-                <CheckCircle size={16} />
-              ) : (
-                <AlertCircle size={16} />
-              )}
-              <span className="text-sm">{message}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </form>
+              <AnimatePresence mode="wait">
+                {status === 'loading' ? (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center space-x-2"
+                  >
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                    />
+                    <span>Subscribing...</span>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="submit"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center space-x-2"
+                  >
+                    <span>Subscribe</span>
+                    <ArrowRight size={16} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
 
-      <div className="mt-6 text-center">
-        <p className="text-blue-100 text-sm">
-          We respect your privacy. Unsubscribe at any time.
-        </p>
+          <AnimatePresence>
+            {message && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`mt-4 p-4 rounded-2xl flex items-center space-x-3 ${
+                  status === 'success' 
+                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {status === 'success' ? (
+                  <CheckCircle size={20} />
+                ) : (
+                  <AlertCircle size={20} />
+                )}
+                <span className="text-sm">{message}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </form>
+
+        <div className="mt-6">
+          <p className="text-gray-500 text-sm font-light">
+            We respect your privacy. Unsubscribe at any time.
+          </p>
+        </div>
       </div>
     </motion.div>
   );

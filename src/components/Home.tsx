@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, Calendar, Timer, TrendingUp, BookOpen, GraduationCap, Brain, DollarSign, MessageSquare } from 'lucide-react';
+import { Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, ArrowRight } from 'lucide-react';
 import Newsletter from './Newsletter';
 import type { ActiveTool } from '../App';
 
@@ -13,58 +13,58 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
     {
       id: 'gpa' as ActiveTool,
       title: 'GPA Calculator',
-      description: 'Calculate your semester and cumulative GPA with ease',
+      description: 'Calculate semester and cumulative GPA with precision',
       icon: Calculator,
-      gradient: 'from-blue-500 to-cyan-500',
+      category: 'Academic',
     },
     {
       id: 'attendance' as ActiveTool,
       title: 'Attendance Tracker',
-      description: 'Track your class attendance and maintain good standing',
+      description: 'Monitor class attendance and maintain requirements',
       icon: Calendar,
-      gradient: 'from-green-500 to-emerald-500',
+      category: 'Academic',
     },
     {
       id: 'timer' as ActiveTool,
       title: 'Study Timer',
-      description: 'Pomodoro timer to boost your productivity and focus',
+      description: 'Pomodoro technique for focused study sessions',
       icon: Timer,
-      gradient: 'from-orange-500 to-red-500',
+      category: 'Productivity',
     },
     {
       id: 'grades' as ActiveTool,
       title: 'Grade Tracker',
-      description: 'Monitor your grades and academic performance',
+      description: 'Track assignments and monitor performance',
       icon: TrendingUp,
-      gradient: 'from-purple-500 to-pink-500',
+      category: 'Academic',
     },
     {
       id: 'schedule' as ActiveTool,
       title: 'Schedule Planner',
-      description: 'Organize your classes and study sessions',
+      description: 'Organize classes and study sessions',
       icon: BookOpen,
-      gradient: 'from-indigo-500 to-purple-500',
+      category: 'Planning',
     },
     {
       id: 'flashcards' as ActiveTool,
       title: 'Flashcard Study',
-      description: 'Create and study flashcards for better memory retention',
+      description: 'Create and study flashcards for better retention',
       icon: Brain,
-      gradient: 'from-violet-500 to-purple-500',
+      category: 'Study',
     },
     {
       id: 'expenses' as ActiveTool,
       title: 'Budget Tracker',
-      description: 'Track your student expenses and manage your budget',
+      description: 'Track expenses and manage student budget',
       icon: DollarSign,
-      gradient: 'from-green-500 to-teal-500',
+      category: 'Finance',
     },
     {
       id: 'reviews' as ActiveTool,
       title: 'Course Reviews',
-      description: 'Share and discover honest reviews about courses',
+      description: 'Share and discover honest course reviews',
       icon: MessageSquare,
-      gradient: 'from-blue-500 to-indigo-500',
+      category: 'Community',
     },
   ];
 
@@ -73,74 +73,83 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1,
+        staggerChildren: 0.05,
       },
     },
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: { y: 12, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
       transition: {
-        type: "spring",
-        stiffness: 100,
+        duration: 0.3,
+        ease: "easeOut",
       },
     },
   };
 
   return (
-    <div className="pt-24 lg:pt-32 px-4 max-w-6xl mx-auto">
+    <div className="pt-20 lg:pt-24 px-6 max-w-7xl mx-auto">
+      {/* Hero Section */}
       <motion.div
-        initial={{ y: -30, opacity: 0 }}
+        initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-12"
+        transition={{ duration: 0.4 }}
+        className="text-center mb-16 lg:mb-20"
       >
-        <motion.div
-          animate={{ rotate: [0, 10, -10, 0] }}
-          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-          className="inline-block mb-4"
-        >
-          <GraduationCap size={60} className="text-blue-600" />
-        </motion.div>
-        <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          AcademicFlow
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          The complete academic success platform designed to help you excel in your studies and manage your academic life efficiently.
-        </p>
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-4xl lg:text-6xl xl:text-7xl font-light text-gray-900 mb-6 tracking-tight">
+            Academic
+            <span className="font-medium text-blue-600"> Flow</span>
+          </h1>
+          <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed font-light">
+            The complete academic success platform designed for modern students. 
+            Track progress, manage time, and excel in your studies.
+          </p>
+        </div>
       </motion.div>
 
+      {/* Tools Grid */}
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-16"
+        className="grid grid-auto-fit gap-6 mb-20"
       >
-        {tools.map((tool, index) => {
+        {tools.map((tool) => {
           const Icon = tool.icon;
           
           return (
             <motion.div
               key={tool.id}
               variants={itemVariants}
-              whileHover={{ y: -5, scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="cursor-pointer"
+              whileHover={{ y: -2 }}
+              className="cursor-pointer group"
               onClick={() => onToolSelect(tool.id)}
             >
-              <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 h-full hover:shadow-xl transition-shadow">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${tool.gradient} flex items-center justify-center mb-4`}>
-                  <Icon size={24} className="text-white" />
+              <div className="glass-card glass-card-hover rounded-2xl p-8 h-full">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="p-3 bg-gray-100 rounded-xl group-hover:bg-blue-50 transition-colors duration-200">
+                    <Icon size={24} className="text-gray-700 group-hover:text-blue-600 transition-colors duration-200" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {tool.category}
+                  </span>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                
+                <h3 className="text-xl font-medium text-gray-900 mb-3">
                   {tool.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-gray-600 text-sm leading-relaxed mb-4">
                   {tool.description}
                 </p>
+                
+                <div className="flex items-center text-blue-600 text-sm font-medium group-hover:translate-x-1 transition-transform duration-200">
+                  <span>Open tool</span>
+                  <ArrowRight size={16} className="ml-2" />
+                </div>
               </div>
             </motion.div>
           );
@@ -149,28 +158,29 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
 
       {/* Newsletter Section */}
       <motion.div
-        initial={{ y: 30, opacity: 0 }}
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.6 }}
-        className="mb-16"
+        transition={{ delay: 0.3, duration: 0.4 }}
+        className="mb-20"
       >
         <Newsletter />
       </motion.div>
 
+      {/* Footer Section */}
       <motion.div
-        initial={{ y: 30, opacity: 0 }}
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.7, duration: 0.6 }}
-        className="text-center"
+        transition={{ delay: 0.4, duration: 0.4 }}
+        className="text-center pb-16"
       >
-        <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-8 shadow-lg border border-white/20 max-w-2xl mx-auto">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+        <div className="glass-card rounded-2xl p-12 max-w-3xl mx-auto">
+          <h2 className="text-2xl lg:text-3xl font-light text-gray-900 mb-4">
             Built for Students, by Students
           </h2>
-          <p className="text-gray-600 leading-relaxed">
-            Our comprehensive suite of tools is designed to streamline your academic workflow, 
-            helping you track progress, manage time effectively, and achieve your academic goals 
-            with beautiful, intuitive interfaces.
+          <p className="text-gray-600 leading-relaxed font-light">
+            Our comprehensive suite of tools streamlines your academic workflow, 
+            helping you track progress, manage time effectively, and achieve your 
+            academic goals with beautiful, intuitive interfaces.
           </p>
         </div>
       </motion.div>

@@ -49,7 +49,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="relative min-h-screen">
         <Navigation activeTool={activeTool} onToolSelect={setActiveTool} />
         
@@ -57,10 +57,10 @@ const AppContent: React.FC = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTool}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
             >
               {renderContent()}
             </motion.div>
