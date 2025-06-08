@@ -54,7 +54,8 @@ const EmailGate: React.FC = () => {
     'Schedule Planner',
     'Flashcard Study',
     'Budget Tracker',
-    'Course Reviews'
+    'Course Reviews',
+    'Student Chat & Notes'
   ];
 
   return (
@@ -165,7 +166,7 @@ const EmailGate: React.FC = () => {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <h3 className="text-sm font-medium text-gray-900 mb-4">What you'll get access to:</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+            <div className="grid grid-cols-1 gap-2 text-sm text-gray-600">
               {features.map((feature, index) => (
                 <motion.div
                   key={feature}

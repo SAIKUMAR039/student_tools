@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, ArrowRight } from 'lucide-react';
+import { Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users, ArrowRight } from 'lucide-react';
 import Newsletter from './Newsletter';
 import type { ActiveTool } from '../App';
 
@@ -66,6 +66,13 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
       icon: MessageSquare,
       category: 'Community',
     },
+    {
+      id: 'chat' as ActiveTool,
+      title: 'Student Chat',
+      description: 'Connect with peers and share study notes',
+      icon: Users,
+      category: 'Community',
+    },
   ];
 
   const containerVariants = {
@@ -106,7 +113,7 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
           </h1>
           <p className="text-lg lg:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed font-light">
             The complete academic success platform designed for modern students. 
-            Track progress, manage time, and excel in your studies.
+            Track progress, manage time, collaborate with peers, and excel in your studies.
           </p>
         </div>
       </motion.div>
@@ -179,8 +186,8 @@ const Home: React.FC<HomeProps> = ({ onToolSelect }) => {
           </h2>
           <p className="text-gray-600 leading-relaxed font-light">
             Our comprehensive suite of tools streamlines your academic workflow, 
-            helping you track progress, manage time effectively, and achieve your 
-            academic goals with beautiful, intuitive interfaces.
+            helping you track progress, manage time effectively, collaborate with peers,
+            and achieve your academic goals with beautiful, intuitive interfaces.
           </p>
         </div>
       </motion.div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare } from 'lucide-react';
+import { Home, Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import UserProfile from './UserProfile';
 import type { ActiveTool } from '../App';
@@ -23,6 +23,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeTool, onToolSelect }) => 
     { id: 'flashcards' as ActiveTool, icon: Brain, label: 'Flashcards' },
     { id: 'expenses' as ActiveTool, icon: DollarSign, label: 'Budget' },
     { id: 'reviews' as ActiveTool, icon: MessageSquare, label: 'Reviews' },
+    { id: 'chat' as ActiveTool, icon: Users, label: 'Chat' },
   ];
 
   if (!isAuthenticated) {
