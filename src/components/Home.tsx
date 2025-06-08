@@ -1,11 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, 
-  DollarSign, MessageSquare, Users, ArrowRight, Play, Github,
-  Mail, MessageCircle, FileText, Bug, Star, ExternalLink,
-  React as ReactIcon, Palette, Zap, Database, Grid, Send
-} from 'lucide-react';
+import { Calculator, Calendar, Timer, TrendingUp, BookOpen, Brain, DollarSign, MessageSquare, Users, ArrowRight, Play, Github, Mail, MessageCircle, FileText, Bug, Star, ExternalLink, Repeat as ReactIcon, Palette, Zap, Database, Grid, Send } from 'lucide-react';
 import Newsletter from './Newsletter';
 import type { ActiveTool } from '../App';
 
