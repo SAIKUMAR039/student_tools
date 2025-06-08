@@ -4,10 +4,15 @@ import {
   Users, Send, Plus, Hash, Lock, Search, Paperclip, 
   Download, Eye, Trash2, Edit3, MessageCircle, FileText,
   Image, Video, Music, Archive, X, Star, Pin, Bell, BellOff,
-  UserPlus, Settings, MoreVertical, Smile, AtSign
+  UserPlus, Settings, MoreVertical, Smile, AtSign, Upload,
+  Folder, Grid, List
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataTracker } from '../utils/DataTracker';
+import { FileManager, FileUploadResult } from '../lib/supabase';
+import FileUpload from './FileUpload';
+import FilePreview from './FilePreview';
+import FileManagerComponent from './FileManager';
 
 interface Message {
   id: string;
@@ -19,6 +24,7 @@ interface Message {
   fileName?: string;
   fileType?: string;
   fileSize?: number;
+  filePath?: string;
   isPinned?: boolean;
   reactions?: { emoji: string; users: string[] }[];
   replyTo?: string;
@@ -52,7 +58,7 @@ interface Note {
   downloads: number;
   rating: number;
   reviews: { user: string; rating: number; comment: string }[];
-  fileAttachments?: { name: string; url: string; type: string }[];
+  fileAttachments?: { name: string; url: string; type: string; path: string }[];
 }
 
 const StudentChat: React.FC = () => {
@@ -63,7 +69,7 @@ const StudentChat: React.FC = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeChannel, setActiveChannel] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'notes' | 'files'>('chat');
   const [newMessage, setNewMessage] = useState('');
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -73,10 +79,18 @@ const StudentChat: React.FC = () => {
   const [showCreateNote, setShowCreateNote] = useState(false);
   const [showChannelSettings, setShowChannelSettings] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [showFileManager, setShowFileManager] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{
+    url: string;
+    name: string;
+    type: string;
+    size?: number;
+  } | null>(null);
   
   // Search and filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isTyping, setIsTyping] = useState<string[]>([]);
   
   // Form states
@@ -92,7 +106,8 @@ const StudentChat: React.FC = () => {
     content: '',
     course: '',
     tags: '',
-    isPublic: true
+    isPublic: true,
+    attachments: [] as FileUploadResult[]
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -150,7 +165,6 @@ const StudentChat: React.FC = () => {
           }
         }
       } else {
-        // Create default general channel if no data exists
         createDefaultChannel();
       }
     } catch (error) {
@@ -223,30 +237,66 @@ const StudentChat: React.FC = () => {
     }
   };
 
+  // Handle file upload for messages
+  const handleFileUpload = async (files: File[]) => {
+    if (!userEmail || files.length === 0) return;
+
+    for (const file of files) {
+      try {
+        const result = await FileManager.uploadFile(file, 'chat', userEmail);
+        
+        if (result.success && result.url && result.metadata) {
+          const message: Message = {
+            id: Date.now().toString() + Math.random(),
+            content: `Shared file: ${result.metadata.name}`,
+            author: userEmail,
+            timestamp: new Date(),
+            type: 'file',
+            fileName: result.metadata.name,
+            fileType: result.metadata.type,
+            fileSize: result.metadata.size,
+            fileUrl: result.url,
+            filePath: result.path,
+            replyTo: replyingTo || undefined
+          };
+
+          // Update channel with new message
+          const updatedChannels = channels.map(channel =>
+            channel.id === activeChannel
+              ? { 
+                  ...channel, 
+                  messages: [...channel.messages, message],
+                  lastActivity: new Date()
+                }
+              : channel
+          );
+
+          setChannels(updatedChannels);
+        }
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
+    }
+
+    setSelectedFiles([]);
+    setReplyingTo(null);
+  };
+
   // Send message with enhanced features
   const sendMessage = () => {
-    if (!newMessage.trim() && !selectedFile) return;
+    if (!newMessage.trim() && selectedFiles.length === 0) return;
 
     const currentChannel = channels.find(c => c.id === activeChannel);
     if (!currentChannel) return;
 
-    let message: Message;
+    // Handle file uploads first
+    if (selectedFiles.length > 0) {
+      handleFileUpload(selectedFiles);
+    }
 
-    if (selectedFile) {
-      message = {
-        id: Date.now().toString(),
-        content: newMessage || `Shared file: ${selectedFile.name}`,
-        author: userEmail || 'Anonymous',
-        timestamp: new Date(),
-        type: 'file',
-        fileName: selectedFile.name,
-        fileType: selectedFile.type,
-        fileSize: selectedFile.size,
-        fileUrl: URL.createObjectURL(selectedFile),
-        replyTo: replyingTo || undefined
-      };
-    } else {
-      message = {
+    // Send text message if there's content
+    if (newMessage.trim()) {
+      const message: Message = {
         id: Date.now().toString(),
         content: newMessage,
         author: userEmail || 'Anonymous',
@@ -254,25 +304,24 @@ const StudentChat: React.FC = () => {
         type: 'text',
         replyTo: replyingTo || undefined
       };
+
+      // Update channel with new message
+      const updatedChannels = channels.map(channel =>
+        channel.id === activeChannel
+          ? { 
+              ...channel, 
+              messages: [...channel.messages, message],
+              lastActivity: new Date()
+            }
+          : channel
+      );
+
+      setChannels(updatedChannels);
     }
 
-    // Update channel with new message
-    const updatedChannels = channels.map(channel =>
-      channel.id === activeChannel
-        ? { 
-            ...channel, 
-            messages: [...channel.messages, message],
-            lastActivity: new Date()
-          }
-        : channel
-    );
-
-    setChannels(updatedChannels);
     setNewMessage('');
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setReplyingTo(null);
-
-    // Clear typing indicator
     clearTypingIndicator();
   };
 
@@ -282,13 +331,11 @@ const StudentChat: React.FC = () => {
       clearTimeout(typingTimeoutRef.current);
     }
 
-    // Add current user to typing list (simulate for demo)
     const currentUser = userEmail || 'Anonymous';
     if (!isTyping.includes(currentUser)) {
       setIsTyping([...isTyping, currentUser]);
     }
 
-    // Remove after 3 seconds of inactivity
     typingTimeoutRef.current = setTimeout(() => {
       clearTypingIndicator();
     }, 3000);
@@ -323,7 +370,7 @@ const StudentChat: React.FC = () => {
     setActiveChannel(channel.id);
   };
 
-  // Create new note
+  // Create new note with file attachments
   const createNote = () => {
     if (!newNote.title.trim() || !newNote.content.trim()) return;
 
@@ -338,12 +385,35 @@ const StudentChat: React.FC = () => {
       isPublic: newNote.isPublic,
       downloads: 0,
       rating: 0,
-      reviews: []
+      reviews: [],
+      fileAttachments: newNote.attachments.map(attachment => ({
+        name: attachment.metadata?.name || 'Unknown',
+        url: attachment.url || '',
+        type: attachment.metadata?.type || 'application/octet-stream',
+        path: attachment.path || ''
+      }))
     };
 
     setNotes([note, ...notes]);
-    setNewNote({ title: '', content: '', course: '', tags: '', isPublic: true });
+    setNewNote({ 
+      title: '', 
+      content: '', 
+      course: '', 
+      tags: '', 
+      isPublic: true,
+      attachments: []
+    });
     setShowCreateNote(false);
+  };
+
+  // Handle file attachment for notes
+  const handleNoteFileUpload = (result: FileUploadResult) => {
+    if (result.success) {
+      setNewNote(prev => ({
+        ...prev,
+        attachments: [...prev.attachments, result]
+      }));
+    }
   };
 
   // Add reaction to message
@@ -361,7 +431,6 @@ const StudentChat: React.FC = () => {
                 
                 if (existingReaction) {
                   if (existingReaction.users.includes(currentUser)) {
-                    // Remove reaction
                     existingReaction.users = existingReaction.users.filter(u => u !== currentUser);
                     if (existingReaction.users.length === 0) {
                       return {
@@ -370,11 +439,9 @@ const StudentChat: React.FC = () => {
                       };
                     }
                   } else {
-                    // Add reaction
                     existingReaction.users.push(currentUser);
                   }
                 } else {
-                  // New reaction
                   reactions.push({ emoji, users: [currentUser] });
                 }
                 
@@ -417,16 +484,11 @@ const StudentChat: React.FC = () => {
     ));
   };
 
-  // Handle file selection
+  // Handle file selection for messages
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
-        return;
-      }
-      setSelectedFile(file);
+    const files = event.target.files;
+    if (files) {
+      setSelectedFiles(Array.from(files));
     }
   };
 
@@ -436,16 +498,8 @@ const StudentChat: React.FC = () => {
     if (fileType.startsWith('video/')) return <Video size={16} className="text-purple-500" />;
     if (fileType.startsWith('audio/')) return <Music size={16} className="text-green-500" />;
     if (fileType.includes('pdf') || fileType.includes('document')) return <FileText size={16} className="text-red-500" />;
+    if (fileType.includes('zip') || fileType.includes('rar')) return <Archive size={16} className="text-orange-500" />;
     return <Archive size={16} className="text-gray-500" />;
-  };
-
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   // Filter functions
@@ -507,6 +561,17 @@ const StudentChat: React.FC = () => {
                 <FileText size={16} className="inline mr-2" />
                 Notes
               </button>
+              <button
+                onClick={() => setActiveTab('files')}
+                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'files'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Folder size={16} className="inline mr-2" />
+                Files
+              </button>
             </div>
           </div>
 
@@ -524,16 +589,20 @@ const StudentChat: React.FC = () => {
             </div>
           </div>
 
-          {/* Channels/Notes List */}
+          {/* Content List */}
           <div className="glass-card rounded-2xl p-4 flex-1 overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-medium text-gray-900">
-                {activeTab === 'chat' ? 'Channels' : 'Study Notes'}
+                {activeTab === 'chat' ? 'Channels' : activeTab === 'notes' ? 'Study Notes' : 'Files'}
               </h3>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => activeTab === 'chat' ? setShowCreateChannel(true) : setShowCreateNote(true)}
+                onClick={() => {
+                  if (activeTab === 'chat') setShowCreateChannel(true);
+                  else if (activeTab === 'notes') setShowCreateNote(true);
+                  else if (activeTab === 'files') setShowFileUpload(true);
+                }}
                 className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
               >
                 <Plus size={16} />
@@ -570,7 +639,7 @@ const StudentChat: React.FC = () => {
                     </div>
                   </motion.button>
                 ))
-              ) : (
+              ) : activeTab === 'notes' ? (
                 filteredNotes.map((note) => (
                   <motion.div
                     key={note.id}
@@ -586,6 +655,12 @@ const StudentChat: React.FC = () => {
                         </span>
                       ))}
                     </div>
+                    {note.fileAttachments && note.fileAttachments.length > 0 && (
+                      <div className="flex items-center space-x-1 mb-2">
+                        <Paperclip size={12} className="text-gray-400" />
+                        <span className="text-xs text-gray-500">{note.fileAttachments.length} files</span>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center text-xs text-gray-500">
                       <span>{note.downloads} downloads</span>
                       <div className="flex items-center space-x-1">
@@ -595,6 +670,17 @@ const StudentChat: React.FC = () => {
                     </div>
                   </motion.div>
                 ))
+              ) : (
+                <div className="text-center py-8">
+                  <Folder size={48} className="mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500 mb-4">File Manager</p>
+                  <button
+                    onClick={() => setShowFileManager(true)}
+                    className="bg-blue-500 text-white px-4 py-2 rounded-xl hover:bg-blue-600 transition-colors"
+                  >
+                    Open File Manager
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -687,13 +773,29 @@ const StudentChat: React.FC = () => {
                             </div>
                             <div className="flex-1">
                               <p className="font-medium text-gray-900 text-sm">{message.fileName}</p>
-                              <p className="text-xs text-gray-500">{formatFileSize(message.fileSize || 0)}</p>
+                              <p className="text-xs text-gray-500">{FileManager.formatFileSize(message.fileSize || 0)}</p>
                             </div>
                             <div className="flex space-x-1">
-                              <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                              <button 
+                                onClick={() => setPreviewFile({
+                                  url: message.fileUrl || '',
+                                  name: message.fileName || '',
+                                  type: message.fileType || '',
+                                  size: message.fileSize
+                                })}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              >
                                 <Eye size={16} />
                               </button>
-                              <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                              <button 
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = message.fileUrl || '';
+                                  link.download = message.fileName || '';
+                                  link.click();
+                                }}
+                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                              >
                                 <Download size={16} />
                               </button>
                             </div>
@@ -805,25 +907,29 @@ const StudentChat: React.FC = () => {
                 )}
 
                 {/* File preview */}
-                {selectedFile && (
-                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          {getFileIcon(selectedFile.type)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{selectedFile.name}</p>
-                          <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                {selectedFiles.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <div key={index} className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              {getFileIcon(file.type)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm">{file.name}</p>
+                              <p className="text-xs text-gray-500">{FileManager.formatFileSize(file.size)}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setSelectedFiles(files => files.filter((_, i) => i !== index))}
+                            className="p-1 text-gray-500 hover:text-red-500 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setSelectedFile(null)}
-                        className="p-1 text-gray-500 hover:text-red-500 transition-colors"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 )}
                 
@@ -833,6 +939,7 @@ const StudentChat: React.FC = () => {
                     ref={fileInputRef}
                     onChange={handleFileSelect}
                     className="hidden"
+                    multiple
                     accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
                   />
                   <button
@@ -856,7 +963,7 @@ const StudentChat: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={sendMessage}
-                    disabled={!newMessage.trim() && !selectedFile}
+                    disabled={!newMessage.trim() && selectedFiles.length === 0}
                     className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send size={20} />
@@ -864,7 +971,7 @@ const StudentChat: React.FC = () => {
                 </div>
               </div>
             </div>
-          ) : (
+          ) : activeTab === 'notes' ? (
             /* Notes Section */
             <div className="glass-card rounded-2xl p-6 h-full overflow-y-auto">
               <div className="grid gap-6">
@@ -897,6 +1004,31 @@ const StudentChat: React.FC = () => {
                         <pre className="whitespace-pre-wrap text-sm text-gray-700">{note.content}</pre>
                       </div>
                     </div>
+
+                    {/* File Attachments */}
+                    {note.fileAttachments && note.fileAttachments.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Attachments</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {note.fileAttachments.map((attachment, index) => (
+                            <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
+                              {getFileIcon(attachment.type)}
+                              <span className="text-xs text-gray-600 truncate">{attachment.name}</span>
+                              <button
+                                onClick={() => setPreviewFile({
+                                  url: attachment.url,
+                                  name: attachment.name,
+                                  type: attachment.type
+                                })}
+                                className="p-1 text-blue-500 hover:bg-blue-100 rounded"
+                              >
+                                <Eye size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     
                     <div className="flex flex-wrap gap-2 mb-4">
                       {note.tags.map((tag, index) => (
@@ -929,6 +1061,22 @@ const StudentChat: React.FC = () => {
                   </div>
                 )}
               </div>
+            </div>
+          ) : (
+            /* Files Section */
+            <div className="glass-card rounded-2xl h-full overflow-hidden">
+              <FileManagerComponent
+                folder="chat"
+                showUpload={true}
+                onFileSelect={(file) => {
+                  setPreviewFile({
+                    url: file.url,
+                    name: file.name,
+                    type: file.type,
+                    size: file.size
+                  });
+                }}
+              />
             </div>
           )}
         </div>
@@ -1068,6 +1216,39 @@ const StudentChat: React.FC = () => {
                   onChange={(e) => setNewNote({...newNote, tags: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+
+                {/* File Attachments */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
+                  <FileUpload
+                    onFileUploaded={handleNoteFileUpload}
+                    folder="notes"
+                    multiple={true}
+                    className="mb-4"
+                  />
+                  
+                  {newNote.attachments.length > 0 && (
+                    <div className="space-y-2">
+                      {newNote.attachments.map((attachment, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            {getFileIcon(attachment.metadata?.type || '')}
+                            <span className="text-sm text-gray-700">{attachment.metadata?.name}</span>
+                          </div>
+                          <button
+                            onClick={() => setNewNote(prev => ({
+                              ...prev,
+                              attachments: prev.attachments.filter((_, i) => i !== index)
+                            }))}
+                            className="p-1 text-red-500 hover:bg-red-100 rounded"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 
                 <label className="flex items-center space-x-2">
                   <input
@@ -1098,6 +1279,99 @@ const StudentChat: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* File Upload Modal */}
+      <AnimatePresence>
+        {showFileUpload && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-2xl w-full"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-medium text-gray-900">Upload Files</h3>
+                <button
+                  onClick={() => setShowFileUpload(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <FileUpload
+                onFileUploaded={(result) => {
+                  console.log('File uploaded:', result);
+                  setShowFileUpload(false);
+                }}
+                folder="chat"
+                multiple={true}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* File Manager Modal */}
+      <AnimatePresence>
+        {showFileManager && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl p-6 max-w-6xl w-full max-h-[90vh] overflow-hidden"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-medium text-gray-900">File Manager</h3>
+                <button
+                  onClick={() => setShowFileManager(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="h-[calc(90vh-120px)] overflow-auto">
+                <FileManagerComponent
+                  folder="chat"
+                  showUpload={true}
+                  onFileSelect={(file) => {
+                    setPreviewFile({
+                      url: file.url,
+                      name: file.name,
+                      type: file.type,
+                      size: file.size
+                    });
+                  }}
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* File Preview */}
+      {previewFile && (
+        <FilePreview
+          fileUrl={previewFile.url}
+          fileName={previewFile.name}
+          fileType={previewFile.type}
+          fileSize={previewFile.size}
+          onClose={() => setPreviewFile(null)}
+        />
+      )}
     </div>
   );
 };
