@@ -289,6 +289,10 @@ class DataTracker {
   async saveChatData(channelName: string, channelType: string, messages: any[]) {
     await this.saveToolData('chat', { channelName, channelType, messages });
   }
+
+  async saveNotesData(notes: any[]) {
+    await this.saveToolData('notes', { notes });
+  }
 }
 
 // React Hook for easy usage

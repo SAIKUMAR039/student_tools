@@ -27,6 +27,7 @@ const SHEETS = {
   EXPENSES_DATA: 'Budget_Tracker_Data',
   REVIEWS_DATA: 'Course_Reviews_Data',
   CHAT_DATA: 'Student_Chat_Data',
+  NOTES_DATA: 'Study_Notes_Data',
   USER_SESSIONS: 'User_Sessions',
   TOOL_USAGE: 'Tool_Usage_Analytics'
 };
@@ -207,10 +208,20 @@ function initializeSheets(spreadsheet) {
   let chatSheet = spreadsheet.getSheetByName(SHEETS.CHAT_DATA);
   if (!chatSheet) {
     chatSheet = spreadsheet.insertSheet(SHEETS.CHAT_DATA);
-    chatSheet.getRange(1, 1, 1, 9).setValues([
-      ['User Email', 'Channel Name', 'Message Type', 'Content', 'File Name', 'File Type', 'Channel Type', 'Timestamp', 'Session ID']
+    chatSheet.getRange(1, 1, 1, 10).setValues([
+      ['User Email', 'Channel Name', 'Channel Type', 'Message Type', 'Content', 'File Name', 'File Type', 'Recipients', 'Timestamp', 'Session ID']
     ]);
-    chatSheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+    chatSheet.getRange(1, 1, 1, 10).setFontWeight('bold');
+  }
+
+  // Initialize Study Notes sheet
+  let notesSheet = spreadsheet.getSheetByName(SHEETS.NOTES_DATA);
+  if (!notesSheet) {
+    notesSheet = spreadsheet.insertSheet(SHEETS.NOTES_DATA);
+    notesSheet.getRange(1, 1, 1, 10).setValues([
+      ['User Email', 'Note Title', 'Course', 'Content Preview', 'Tags', 'Is Public', 'Downloads', 'Rating', 'Timestamp', 'Session ID']
+    ]);
+    notesSheet.getRange(1, 1, 1, 10).setFontWeight('bold');
   }
 
   // Initialize User Sessions sheet
@@ -264,6 +275,9 @@ function saveToolData(spreadsheet, toolName, userEmail, toolData, timestamp) {
       break;
     case 'chat':
       saveChatData(spreadsheet, userEmail, toolData, timestamp, sessionId);
+      break;
+    case 'notes':
+      saveNotesData(spreadsheet, userEmail, toolData, timestamp, sessionId);
       break;
   }
 }
@@ -449,19 +463,66 @@ function saveReviewsData(spreadsheet, userEmail, data, timestamp, sessionId) {
 function saveChatData(spreadsheet, userEmail, data, timestamp, sessionId) {
   const sheet = spreadsheet.getSheetByName(SHEETS.CHAT_DATA);
   
-  if (data.messages && Array.isArray(data.messages)) {
+  // Handle both individual messages and channel data
+  if (data.channelName && Array.isArray(data)) {
+    // Save channel data
+    data.forEach(channel => {
+      if (channel.messages && Array.isArray(channel.messages)) {
+        channel.messages.forEach(message => {
+          sheet.appendRow([
+            userEmail,
+            channel.name || 'unknown',
+            channel.type || 'public',
+            message.type || 'text',
+            message.content || '',
+            message.fileName || '',
+            message.fileType || '',
+            channel.members ? channel.members.join(', ') : '',
+            new Date(timestamp),
+            sessionId
+          ]);
+        });
+      }
+    });
+  } else if (data.messages && Array.isArray(data.messages)) {
+    // Save individual messages
     data.messages.forEach(message => {
       sheet.appendRow([
         userEmail,
         data.channelName || 'general',
+        data.channelType || 'public',
         message.type || 'text',
         message.content || '',
         message.fileName || '',
         message.fileType || '',
-        data.channelType || 'public',
+        'all',
         new Date(timestamp),
         sessionId
       ]);
+    });
+  }
+}
+
+function saveNotesData(spreadsheet, userEmail, data, timestamp, sessionId) {
+  const sheet = spreadsheet.getSheetByName(SHEETS.NOTES_DATA);
+  
+  if (data.notes && Array.isArray(data.notes)) {
+    data.notes.forEach(note => {
+      if (note.title && note.content) {
+        const contentPreview = note.content.substring(0, 100) + (note.content.length > 100 ? '...' : '');
+        sheet.appendRow([
+          userEmail,
+          note.title,
+          note.course || '',
+          contentPreview,
+          note.tags ? note.tags.join(', ') : '',
+          note.isPublic || false,
+          note.downloads || 0,
+          note.rating || 0,
+          new Date(timestamp),
+          sessionId
+        ]);
+      }
     });
   }
 }
@@ -660,7 +721,8 @@ function getSheetNameForTool(toolName) {
     'flashcards': SHEETS.FLASHCARDS_DATA,
     'expenses': SHEETS.EXPENSES_DATA,
     'reviews': SHEETS.REVIEWS_DATA,
-    'chat': SHEETS.CHAT_DATA
+    'chat': SHEETS.CHAT_DATA,
+    'notes': SHEETS.NOTES_DATA
   };
   return toolSheetMap[toolName];
 }
@@ -687,14 +749,19 @@ function createErrorResponse(message) {
 function testDataTracking() {
   const testData = {
     action: 'save_data',
-    toolName: 'gpa',
+    toolName: 'chat',
     userEmail: 'test@example.com',
     data: {
-      courses: [
-        { name: 'Math 101', credits: 3, grade: 'A' },
-        { name: 'English 101', credits: 3, grade: 'B+' }
-      ],
-      gpa: 3.65
+      channelName: 'general',
+      channelType: 'public',
+      messages: [
+        { 
+          content: 'Test message', 
+          type: 'text', 
+          author: 'test@example.com',
+          timestamp: new Date().toISOString()
+        }
+      ]
     },
     timestamp: new Date().toISOString()
   };
@@ -713,7 +780,7 @@ function testGetUserData() {
   const result = getUserData(
     SpreadsheetApp.openById(SPREADSHEET_ID),
     'test@example.com',
-    'gpa'
+    'chat'
   );
   
   console.log('User data:', result.getContent());

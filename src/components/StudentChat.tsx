@@ -4,10 +4,10 @@ import {
   Users, Send, Plus, Hash, Lock, Search, Paperclip, 
   Download, Eye, Trash2, Edit3, MessageCircle, FileText,
   Image, Video, Music, Archive, X, Star, Pin, Bell, BellOff,
-  UserPlus, Settings, Volume2, VolumeX, Copy, Share2,
-  CheckCircle, AlertCircle, Info, Smile, Heart, ThumbsUp
+  UserPlus, Settings, MoreVertical, Smile, AtSign
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDataTracker } from '../utils/DataTracker';
 
 interface Message {
   id: string;
@@ -20,9 +20,10 @@ interface Message {
   fileType?: string;
   fileSize?: number;
   isPinned?: boolean;
-  reactions?: { emoji: string; users: string[]; count: number }[];
+  reactions?: { emoji: string; users: string[] }[];
   replyTo?: string;
   edited?: boolean;
+  editedAt?: Date;
 }
 
 interface Channel {
@@ -33,12 +34,10 @@ interface Channel {
   members: string[];
   messages: Message[];
   category: string;
-  unreadCount: number;
-  lastActivity: Date;
+  createdBy: string;
+  createdAt: Date;
   notifications: boolean;
-  isJoined: boolean;
-  memberCount: number;
-  onlineMembers: string[];
+  lastActivity: Date;
 }
 
 interface Note {
@@ -53,133 +52,34 @@ interface Note {
   downloads: number;
   rating: number;
   reviews: { user: string; rating: number; comment: string }[];
-  attachments?: { name: string; url: string; type: string; size: number }[];
-}
-
-interface Notification {
-  id: string;
-  type: 'message' | 'mention' | 'file' | 'join' | 'system';
-  title: string;
-  message: string;
-  timestamp: Date;
-  channelId: string;
-  read: boolean;
-  avatar?: string;
+  fileAttachments?: { name: string; url: string; type: string }[];
 }
 
 const StudentChat: React.FC = () => {
   const { userEmail } = useAuth();
-  const [channels, setChannels] = useState<Channel[]>([
-    {
-      id: '1',
-      name: 'general',
-      description: 'General discussion for all students',
-      type: 'public',
-      members: ['student1@example.com', 'student2@example.com', userEmail || ''],
-      messages: [
-        {
-          id: '1',
-          content: 'Welcome to AcademicFlow Chat! 🎓 Connect with fellow students and share knowledge.',
-          author: 'System',
-          timestamp: new Date(Date.now() - 3600000),
-          type: 'system'
-        }
-      ],
-      category: 'General',
-      unreadCount: 0,
-      lastActivity: new Date(Date.now() - 3600000),
-      notifications: true,
-      isJoined: true,
-      memberCount: 3,
-      onlineMembers: ['student1@example.com', userEmail || '']
-    },
-    {
-      id: '2',
-      name: 'cs101-study-group',
-      description: 'Computer Science 101 study group - Join to collaborate!',
-      type: 'public',
-      members: ['student1@example.com'],
-      messages: [
-        {
-          id: '2',
-          content: 'Anyone working on the recursion assignment? Let\'s help each other! 💻',
-          author: 'student1@example.com',
-          timestamp: new Date(Date.now() - 1800000),
-          type: 'text'
-        }
-      ],
-      category: 'Computer Science',
-      unreadCount: 1,
-      lastActivity: new Date(Date.now() - 1800000),
-      notifications: true,
-      isJoined: false,
-      memberCount: 1,
-      onlineMembers: ['student1@example.com']
-    },
-    {
-      id: '3',
-      name: 'math201-help',
-      description: 'Calculus II help and study sessions',
-      type: 'public',
-      members: ['student2@example.com', 'student3@example.com'],
-      messages: [],
-      category: 'Mathematics',
-      unreadCount: 0,
-      lastActivity: new Date(Date.now() - 7200000),
-      notifications: false,
-      isJoined: false,
-      memberCount: 2,
-      onlineMembers: ['student2@example.com']
-    }
-  ]);
-
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: '1',
-      title: 'CS101 - Introduction to Programming',
-      content: '# Programming Basics\n\n## Variables\n- Variables store data\n- Use meaningful names\n\n## Functions\n- Reusable code blocks\n- Take parameters and return values\n\n## Best Practices\n- Write clean, readable code\n- Comment your code\n- Test thoroughly',
-      author: 'student1@example.com',
-      course: 'CS101',
-      tags: ['programming', 'basics', 'variables', 'functions'],
-      timestamp: new Date(Date.now() - 86400000),
-      isPublic: true,
-      downloads: 15,
-      rating: 4.5,
-      reviews: [
-        { user: 'student2@example.com', rating: 5, comment: 'Very helpful notes!' },
-        { user: 'student3@example.com', rating: 4, comment: 'Clear and concise.' }
-      ],
-      attachments: [
-        { name: 'code-examples.py', url: '#', type: 'text/python', size: 2048 }
-      ]
-    }
-  ]);
-
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'message',
-      title: 'New message in cs101-study-group',
-      message: 'student1: Anyone working on the recursion assignment?',
-      timestamp: new Date(Date.now() - 1800000),
-      channelId: '2',
-      read: false
-    }
-  ]);
-
-  const [activeChannel, setActiveChannel] = useState('1');
+  const dataTracker = useDataTracker();
+  
+  // State management
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [activeChannel, setActiveChannel] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'chat' | 'notes'>('chat');
   const [newMessage, setNewMessage] = useState('');
-  const [showCreateChannel, setShowCreateChannel] = useState(false);
-  const [showCreateNote, setShowCreateNote] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showChannelSettings, setShowChannelSettings] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [dragOver, setDragOver] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [editingMessage, setEditingMessage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   
+  // Modal states
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showCreateNote, setShowCreateNote] = useState(false);
+  const [showChannelSettings, setShowChannelSettings] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  
+  // Search and filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isTyping, setIsTyping] = useState<string[]>([]);
+  
+  // Form states
   const [newChannel, setNewChannel] = useState({
     name: '',
     description: '',
@@ -197,281 +97,209 @@ const StudentChat: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const categories = ['General', 'Computer Science', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Literature', 'History'];
-  const commonReactions = ['👍', '❤️', '😊', '🎉', '🤔', '👏'];
+  const emojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '🎉', '🔥', '💯', '👏'];
 
+  // Load data on component mount
+  useEffect(() => {
+    dataTracker.trackToolUsage('chat');
+    loadChatData();
+    loadNotesData();
+  }, []);
+
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [channels]);
 
-  // Notification sound effect
-  const playNotificationSound = () => {
-    if (soundEnabled) {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
-      audio.volume = 0.3;
-      audio.play().catch(() => {}); // Ignore errors if audio can't play
-    }
-  };
-
-  // Request notification permission
+  // Auto-save data when it changes
   useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+    if (channels.length > 0) {
+      saveChatData();
     }
-  }, []);
+  }, [channels]);
 
-  // Show browser notification
-  const showBrowserNotification = (title: string, body: string, channelId: string) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: channelId
-      });
-      
-      notification.onclick = () => {
-        window.focus();
-        setActiveChannel(channelId);
-        notification.close();
-      };
-      
-      setTimeout(() => notification.close(), 5000);
+  useEffect(() => {
+    if (notes.length > 0) {
+      saveNotesData();
+    }
+  }, [notes]);
+
+  // Load saved chat data
+  const loadChatData = async () => {
+    try {
+      const savedData = await dataTracker.getUserData('chat');
+      if (savedData && savedData.length > 0) {
+        const latestData = savedData[savedData.length - 1];
+        if (latestData.channels) {
+          const loadedChannels = latestData.channels.map((channel: any) => ({
+            ...channel,
+            createdAt: new Date(channel.createdAt),
+            lastActivity: new Date(channel.lastActivity),
+            messages: channel.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+              editedAt: msg.editedAt ? new Date(msg.editedAt) : undefined
+            }))
+          }));
+          setChannels(loadedChannels);
+          if (loadedChannels.length > 0 && !activeChannel) {
+            setActiveChannel(loadedChannels[0].id);
+          }
+        }
+      } else {
+        // Create default general channel if no data exists
+        createDefaultChannel();
+      }
+    } catch (error) {
+      console.error('Error loading chat data:', error);
+      createDefaultChannel();
     }
   };
 
-  const joinChannel = (channelId: string) => {
-    setChannels(channels.map(channel => {
-      if (channel.id === channelId) {
-        const updatedChannel = {
-          ...channel,
-          isJoined: true,
-          members: [...channel.members, userEmail || 'Anonymous'],
-          memberCount: channel.memberCount + 1,
-          onlineMembers: [...channel.onlineMembers, userEmail || 'Anonymous']
-        };
-        
-        // Add system message
-        const joinMessage: Message = {
-          id: Date.now().toString(),
-          content: `${userEmail?.split('@')[0] || 'Anonymous'} joined the channel`,
+  // Load saved notes data
+  const loadNotesData = async () => {
+    try {
+      const savedData = await dataTracker.getUserData('notes');
+      if (savedData && savedData.length > 0) {
+        const latestData = savedData[savedData.length - 1];
+        if (latestData.notes) {
+          const loadedNotes = latestData.notes.map((note: any) => ({
+            ...note,
+            timestamp: new Date(note.timestamp)
+          }));
+          setNotes(loadedNotes);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading notes data:', error);
+    }
+  };
+
+  // Create default general channel
+  const createDefaultChannel = () => {
+    const defaultChannel: Channel = {
+      id: '1',
+      name: 'general',
+      description: 'General discussion for all students',
+      type: 'public',
+      members: [userEmail || 'anonymous'],
+      messages: [
+        {
+          id: '1',
+          content: 'Welcome to AcademicFlow Chat! 🎓 Connect with fellow students, share notes, and collaborate on your studies.',
           author: 'System',
           timestamp: new Date(),
           type: 'system'
-        };
-        
-        updatedChannel.messages.push(joinMessage);
-        
-        // Add notification
-        const notification: Notification = {
-          id: Date.now().toString(),
-          type: 'join',
-          title: `Joined ${channel.name}`,
-          message: `You are now a member of ${channel.name}`,
-          timestamp: new Date(),
-          channelId,
-          read: false
-        };
-        
-        setNotifications(prev => [notification, ...prev]);
-        playNotificationSound();
-        
-        return updatedChannel;
-      }
-      return channel;
-    }));
-    
-    setActiveChannel(channelId);
+        }
+      ],
+      category: 'General',
+      createdBy: 'System',
+      createdAt: new Date(),
+      notifications: true,
+      lastActivity: new Date()
+    };
+    setChannels([defaultChannel]);
+    setActiveChannel(defaultChannel.id);
   };
 
-  const leaveChannel = (channelId: string) => {
-    setChannels(channels.map(channel => {
-      if (channel.id === channelId) {
-        return {
-          ...channel,
-          isJoined: false,
-          members: channel.members.filter(member => member !== userEmail),
-          memberCount: Math.max(0, channel.memberCount - 1),
-          onlineMembers: channel.onlineMembers.filter(member => member !== userEmail)
-        };
-      }
-      return channel;
-    }));
-    
-    if (activeChannel === channelId) {
-      setActiveChannel('1'); // Switch to general channel
+  // Save chat data to Google Sheets
+  const saveChatData = async () => {
+    try {
+      await dataTracker.saveChatData('all_channels', 'mixed', channels);
+    } catch (error) {
+      console.error('Error saving chat data:', error);
     }
   };
 
-  const toggleChannelNotifications = (channelId: string) => {
-    setChannels(channels.map(channel => 
-      channel.id === channelId 
-        ? { ...channel, notifications: !channel.notifications }
-        : channel
-    ));
+  // Save notes data to Google Sheets
+  const saveNotesData = async () => {
+    try {
+      await dataTracker.saveNotesData(notes);
+    } catch (error) {
+      console.error('Error saving notes data:', error);
+    }
   };
 
+  // Send message with enhanced features
   const sendMessage = () => {
-    if (!newMessage.trim() && selectedFiles.length === 0) return;
+    if (!newMessage.trim() && !selectedFile) return;
 
     const currentChannel = channels.find(c => c.id === activeChannel);
-    if (!currentChannel || !currentChannel.isJoined) return;
+    if (!currentChannel) return;
 
-    let messages: Message[] = [];
+    let message: Message;
 
-    // Handle text message
-    if (newMessage.trim()) {
-      const textMessage: Message = {
+    if (selectedFile) {
+      message = {
+        id: Date.now().toString(),
+        content: newMessage || `Shared file: ${selectedFile.name}`,
+        author: userEmail || 'Anonymous',
+        timestamp: new Date(),
+        type: 'file',
+        fileName: selectedFile.name,
+        fileType: selectedFile.type,
+        fileSize: selectedFile.size,
+        fileUrl: URL.createObjectURL(selectedFile),
+        replyTo: replyingTo || undefined
+      };
+    } else {
+      message = {
         id: Date.now().toString(),
         content: newMessage,
         author: userEmail || 'Anonymous',
         timestamp: new Date(),
         type: 'text',
-        replyTo: replyingTo || undefined,
-        reactions: []
+        replyTo: replyingTo || undefined
       };
-      messages.push(textMessage);
     }
 
-    // Handle file uploads
-    selectedFiles.forEach((file, index) => {
-      const fileMessage: Message = {
-        id: (Date.now() + index + 1).toString(),
-        content: `Shared file: ${file.name}`,
-        author: userEmail || 'Anonymous',
-        timestamp: new Date(),
-        type: 'file',
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        fileUrl: URL.createObjectURL(file),
-        reactions: []
-      };
-      messages.push(fileMessage);
-    });
-
-    setChannels(channels.map(channel => {
-      if (channel.id === activeChannel) {
-        const updatedChannel = {
-          ...channel,
-          messages: [...channel.messages, ...messages],
-          lastActivity: new Date()
-        };
-        
-        // Update unread count for other members
-        const otherMembers = channel.members.filter(member => member !== userEmail);
-        if (otherMembers.length > 0) {
-          // Simulate notifications for other users
-          playNotificationSound();
-          
-          if (channel.notifications) {
-            showBrowserNotification(
-              `New message in ${channel.name}`,
-              newMessage || `${selectedFiles.length} file(s) shared`,
-              channel.id
-            );
+    // Update channel with new message
+    const updatedChannels = channels.map(channel =>
+      channel.id === activeChannel
+        ? { 
+            ...channel, 
+            messages: [...channel.messages, message],
+            lastActivity: new Date()
           }
-        }
-        
-        return updatedChannel;
-      }
-      return channel;
-    }));
+        : channel
+    );
 
+    setChannels(updatedChannels);
     setNewMessage('');
-    setSelectedFiles([]);
+    setSelectedFile(null);
     setReplyingTo(null);
+
+    // Clear typing indicator
+    clearTypingIndicator();
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setSelectedFiles(prev => [...prev, ...files]);
+  // Handle typing indicators
+  const handleTyping = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Add current user to typing list (simulate for demo)
+    const currentUser = userEmail || 'Anonymous';
+    if (!isTyping.includes(currentUser)) {
+      setIsTyping([...isTyping, currentUser]);
+    }
+
+    // Remove after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      clearTypingIndicator();
+    }, 3000);
   };
 
-  const handleDrop = (event: React.DragEvent) => {
-    event.preventDefault();
-    setDragOver(false);
-    
-    const files = Array.from(event.dataTransfer.files);
-    setSelectedFiles(prev => [...prev, ...files]);
+  const clearTypingIndicator = () => {
+    const currentUser = userEmail || 'Anonymous';
+    setIsTyping(isTyping.filter(user => user !== currentUser));
   };
 
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault();
-    setDragOver(true);
-  };
-
-  const handleDragLeave = (event: React.DragEvent) => {
-    event.preventDefault();
-    setDragOver(false);
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const addReaction = (messageId: string, emoji: string) => {
-    setChannels(channels.map(channel => {
-      if (channel.id === activeChannel) {
-        return {
-          ...channel,
-          messages: channel.messages.map(message => {
-            if (message.id === messageId) {
-              const reactions = message.reactions || [];
-              const existingReaction = reactions.find(r => r.emoji === emoji);
-              
-              if (existingReaction) {
-                if (existingReaction.users.includes(userEmail || '')) {
-                  // Remove reaction
-                  return {
-                    ...message,
-                    reactions: reactions.map(r => 
-                      r.emoji === emoji 
-                        ? { 
-                            ...r, 
-                            users: r.users.filter(u => u !== userEmail),
-                            count: r.count - 1
-                          }
-                        : r
-                    ).filter(r => r.count > 0)
-                  };
-                } else {
-                  // Add reaction
-                  return {
-                    ...message,
-                    reactions: reactions.map(r => 
-                      r.emoji === emoji 
-                        ? { 
-                            ...r, 
-                            users: [...r.users, userEmail || ''],
-                            count: r.count + 1
-                          }
-                        : r
-                    )
-                  };
-                }
-              } else {
-                // New reaction
-                return {
-                  ...message,
-                  reactions: [...reactions, {
-                    emoji,
-                    users: [userEmail || ''],
-                    count: 1
-                  }]
-                };
-              }
-            }
-            return message;
-          })
-        };
-      }
-      return channel;
-    }));
-  };
-
+  // Create new channel
   const createChannel = () => {
     if (!newChannel.name.trim()) return;
 
@@ -481,20 +309,12 @@ const StudentChat: React.FC = () => {
       description: newChannel.description,
       type: newChannel.type,
       members: [userEmail || 'Anonymous'],
-      messages: [{
-        id: '1',
-        content: `Channel created by ${userEmail?.split('@')[0] || 'Anonymous'}`,
-        author: 'System',
-        timestamp: new Date(),
-        type: 'system'
-      }],
+      messages: [],
       category: newChannel.category,
-      unreadCount: 0,
-      lastActivity: new Date(),
+      createdBy: userEmail || 'Anonymous',
+      createdAt: new Date(),
       notifications: true,
-      isJoined: true,
-      memberCount: 1,
-      onlineMembers: [userEmail || 'Anonymous']
+      lastActivity: new Date()
     };
 
     setChannels([...channels, channel]);
@@ -503,6 +323,7 @@ const StudentChat: React.FC = () => {
     setActiveChannel(channel.id);
   };
 
+  // Create new note
   const createNote = () => {
     if (!newNote.title.trim() || !newNote.content.trim()) return;
 
@@ -525,24 +346,100 @@ const StudentChat: React.FC = () => {
     setShowCreateNote(false);
   };
 
-  const markNotificationAsRead = (notificationId: string) => {
-    setNotifications(notifications.map(notif => 
-      notif.id === notificationId ? { ...notif, read: true } : notif
+  // Add reaction to message
+  const addReaction = (messageId: string, emoji: string) => {
+    const currentUser = userEmail || 'Anonymous';
+    
+    setChannels(channels.map(channel => 
+      channel.id === activeChannel
+        ? {
+            ...channel,
+            messages: channel.messages.map(message => {
+              if (message.id === messageId) {
+                const reactions = message.reactions || [];
+                const existingReaction = reactions.find(r => r.emoji === emoji);
+                
+                if (existingReaction) {
+                  if (existingReaction.users.includes(currentUser)) {
+                    // Remove reaction
+                    existingReaction.users = existingReaction.users.filter(u => u !== currentUser);
+                    if (existingReaction.users.length === 0) {
+                      return {
+                        ...message,
+                        reactions: reactions.filter(r => r.emoji !== emoji)
+                      };
+                    }
+                  } else {
+                    // Add reaction
+                    existingReaction.users.push(currentUser);
+                  }
+                } else {
+                  // New reaction
+                  reactions.push({ emoji, users: [currentUser] });
+                }
+                
+                return { ...message, reactions };
+              }
+              return message;
+            })
+          }
+        : channel
+    ));
+    
+    setShowEmojiPicker(null);
+  };
+
+  // Pin/unpin message
+  const togglePinMessage = (messageId: string) => {
+    setChannels(channels.map(channel => 
+      channel.id === activeChannel
+        ? {
+            ...channel,
+            messages: channel.messages.map(message =>
+              message.id === messageId
+                ? { ...message, isPinned: !message.isPinned }
+                : message
+            )
+          }
+        : channel
     ));
   };
 
-  const markAllNotificationsAsRead = () => {
-    setNotifications(notifications.map(notif => ({ ...notif, read: true })));
+  // Delete message
+  const deleteMessage = (messageId: string) => {
+    setChannels(channels.map(channel => 
+      channel.id === activeChannel
+        ? {
+            ...channel,
+            messages: channel.messages.filter(message => message.id !== messageId)
+          }
+        : channel
+    ));
   };
 
+  // Handle file selection
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  // Get file icon based on type
   const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return <Image size={16} className="text-blue-600" />;
-    if (fileType.startsWith('video/')) return <Video size={16} className="text-purple-600" />;
-    if (fileType.startsWith('audio/')) return <Music size={16} className="text-green-600" />;
-    if (fileType.includes('pdf') || fileType.includes('document')) return <FileText size={16} className="text-red-600" />;
-    return <Archive size={16} className="text-gray-600" />;
+    if (fileType.startsWith('image/')) return <Image size={16} className="text-blue-500" />;
+    if (fileType.startsWith('video/')) return <Video size={16} className="text-purple-500" />;
+    if (fileType.startsWith('audio/')) return <Music size={16} className="text-green-500" />;
+    if (fileType.includes('pdf') || fileType.includes('document')) return <FileText size={16} className="text-red-500" />;
+    return <Archive size={16} className="text-gray-500" />;
   };
 
+  // Format file size
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -551,20 +448,7 @@ const StudentChat: React.FC = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 1) return 'now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  };
-
+  // Filter functions
   const filteredChannels = channels.filter(channel =>
     channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     channel.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -577,7 +461,7 @@ const StudentChat: React.FC = () => {
   );
 
   const currentChannel = channels.find(c => c.id === activeChannel);
-  const unreadNotifications = notifications.filter(n => !n.read).length;
+  const pinnedMessages = currentChannel?.messages.filter(m => m.isPinned) || [];
 
   return (
     <div className="pt-20 lg:pt-24 px-4 max-w-7xl mx-auto h-screen">
@@ -598,141 +482,33 @@ const StudentChat: React.FC = () => {
       <div className="grid lg:grid-cols-5 gap-6 h-[calc(100vh-200px)]">
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-4">
-          {/* Header with Notifications */}
-          <div className="glass-card rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-gray-900">AcademicFlow Chat</h3>
-              <div className="flex items-center space-x-2">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    soundEnabled ? 'text-blue-600 bg-blue-50' : 'text-gray-400 bg-gray-50'
-                  }`}
-                  title={soundEnabled ? 'Disable sounds' : 'Enable sounds'}
-                >
-                  {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                >
-                  <Bell size={16} />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                    </span>
-                  )}
-                </motion.button>
-              </div>
-            </div>
-
-            {/* Tab Switcher */}
-            <div className="flex space-x-1 p-1 bg-gray-100 rounded-xl">
+          {/* Tab Switcher */}
+          <div className="glass-card rounded-2xl p-2">
+            <div className="flex space-x-1">
               <button
                 onClick={() => setActiveTab('chat')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   activeTab === 'chat'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
+                <MessageCircle size={16} className="inline mr-2" />
                 Chat
               </button>
               <button
                 onClick={() => setActiveTab('notes')}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                   activeTab === 'notes'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
+                <FileText size={16} className="inline mr-2" />
                 Notes
               </button>
             </div>
           </div>
-
-          {/* Notifications Panel */}
-          <AnimatePresence>
-            {showNotifications && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="glass-card rounded-2xl p-4 max-h-80 overflow-y-auto"
-              >
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium text-gray-900">Notifications</h4>
-                  {unreadNotifications > 0 && (
-                    <button
-                      onClick={markAllNotificationsAsRead}
-                      className="text-xs text-blue-600 hover:text-blue-700"
-                    >
-                      Mark all read
-                    </button>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  {notifications.slice(0, 5).map((notification) => (
-                    <motion.div
-                      key={notification.id}
-                      className={`p-3 rounded-xl border transition-colors cursor-pointer ${
-                        notification.read 
-                          ? 'bg-gray-50 border-gray-200' 
-                          : 'bg-blue-50 border-blue-200'
-                      }`}
-                      onClick={() => {
-                        markNotificationAsRead(notification.id);
-                        setActiveChannel(notification.channelId);
-                        setShowNotifications(false);
-                      }}
-                    >
-                      <div className="flex items-start space-x-2">
-                        <div className={`p-1 rounded-full ${
-                          notification.type === 'message' ? 'bg-blue-100' :
-                          notification.type === 'mention' ? 'bg-orange-100' :
-                          notification.type === 'file' ? 'bg-green-100' :
-                          notification.type === 'join' ? 'bg-purple-100' :
-                          'bg-gray-100'
-                        }`}>
-                          {notification.type === 'message' && <MessageCircle size={12} className="text-blue-600" />}
-                          {notification.type === 'mention' && <Bell size={12} className="text-orange-600" />}
-                          {notification.type === 'file' && <Paperclip size={12} className="text-green-600" />}
-                          {notification.type === 'join' && <UserPlus size={12} className="text-purple-600" />}
-                          {notification.type === 'system' && <Info size={12} className="text-gray-600" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {notification.title}
-                          </p>
-                          <p className="text-xs text-gray-600 truncate">
-                            {notification.message}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {formatTime(notification.timestamp)}
-                          </p>
-                        </div>
-                        {!notification.read && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2" />
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                  
-                  {notifications.length === 0 && (
-                    <div className="text-center py-6 text-gray-500">
-                      <Bell size={32} className="mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No notifications yet</p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
 
           {/* Search */}
           <div className="glass-card rounded-2xl p-4">
@@ -743,7 +519,7 @@ const StudentChat: React.FC = () => {
                 placeholder={`Search ${activeTab}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               />
             </div>
           </div>
@@ -767,82 +543,32 @@ const StudentChat: React.FC = () => {
             <div className="space-y-2">
               {activeTab === 'chat' ? (
                 filteredChannels.map((channel) => (
-                  <motion.div
+                  <motion.button
                     key={channel.id}
-                    className={`p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+                    onClick={() => setActiveChannel(channel.id)}
+                    className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
                       activeChannel === channel.id
-                        ? 'border-blue-200 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'bg-blue-50 border-2 border-blue-200'
+                        : 'hover:bg-gray-50 border-2 border-transparent'
                     }`}
                     whileHover={{ scale: 1.02 }}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div 
-                        className="flex items-center space-x-2 flex-1"
-                        onClick={() => {
-                          if (channel.isJoined) {
-                            setActiveChannel(channel.id);
-                          }
-                        }}
-                      >
-                        {channel.type === 'private' ? <Lock size={14} /> : <Hash size={14} />}
-                        <span className="font-medium text-gray-900 text-sm">{channel.name}</span>
-                        {channel.unreadCount > 0 && (
-                          <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                            {channel.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center space-x-1">
-                        {channel.isJoined && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleChannelNotifications(channel.id);
-                            }}
-                            className={`p-1 rounded transition-colors ${
-                              channel.notifications 
-                                ? 'text-blue-600 hover:bg-blue-100' 
-                                : 'text-gray-400 hover:bg-gray-100'
-                            }`}
-                          >
-                            {channel.notifications ? <Bell size={12} /> : <BellOff size={12} />}
-                          </button>
-                        )}
-                        
-                        {!channel.isJoined ? (
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              joinChannel(channel.id);
-                            }}
-                            className="px-2 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 transition-colors"
-                          >
-                            Join
-                          </motion.button>
-                        ) : (
-                          <div className="flex items-center space-x-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span className="text-xs text-gray-500">{channel.onlineMembers.length}</span>
-                          </div>
-                        )}
-                      </div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      {channel.type === 'private' ? <Lock size={14} /> : <Hash size={14} />}
+                      <span className="font-medium text-gray-900">{channel.name}</span>
+                      {channel.notifications && (
+                        <Bell size={12} className="text-blue-500" />
+                      )}
                     </div>
-                    
-                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">{channel.description}</p>
-                    
-                    <div className="flex justify-between items-center text-xs text-gray-500">
-                      <span>{channel.category}</span>
+                    <p className="text-xs text-gray-600 truncate">{channel.description}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-xs text-gray-500">{channel.category}</span>
                       <div className="flex items-center space-x-2">
-                        <span>{channel.memberCount} members</span>
-                        <span>•</span>
-                        <span>{formatTime(channel.lastActivity)}</span>
+                        <span className="text-xs text-gray-500">{channel.messages.length} msgs</span>
+                        <span className="text-xs text-gray-500">{channel.members.length} members</span>
                       </div>
                     </div>
-                  </motion.div>
+                  </motion.button>
                 ))
               ) : (
                 filteredNotes.map((note) => (
@@ -851,7 +577,7 @@ const StudentChat: React.FC = () => {
                     className="p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
                     whileHover={{ scale: 1.02 }}
                   >
-                    <h4 className="font-medium text-gray-900 mb-1 text-sm">{note.title}</h4>
+                    <h4 className="font-medium text-gray-900 mb-1">{note.title}</h4>
                     <p className="text-xs text-gray-600 mb-2">{note.course}</p>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {note.tags.slice(0, 2).map((tag, index) => (
@@ -889,273 +615,257 @@ const StudentChat: React.FC = () => {
                         <p className="text-sm text-gray-600">{currentChannel.description}</p>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-sm text-gray-500 flex items-center space-x-2">
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                          <span>{currentChannel.onlineMembers.length} online</span>
-                        </div>
-                        <span>•</span>
-                        <span>{currentChannel.memberCount} members</span>
-                      </div>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-500">
+                        {currentChannel.members.length} members
+                      </span>
+                      <button
                         onClick={() => setShowChannelSettings(true)}
-                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-500 hover:bg-gray-50 rounded-lg transition-colors"
                       >
                         <Settings size={16} />
-                      </motion.button>
+                      </button>
                     </div>
                   </div>
+
+                  {/* Pinned Messages */}
+                  {pinnedMessages.length > 0 && (
+                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <Pin size={14} className="text-yellow-600" />
+                        <span className="text-sm font-medium text-yellow-800">Pinned Messages</span>
+                      </div>
+                      {pinnedMessages.slice(0, 2).map(msg => (
+                        <p key={msg.id} className="text-xs text-yellow-700 truncate">
+                          {msg.author}: {msg.content}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Messages */}
-              <div 
-                ref={dropZoneRef}
-                className={`flex-1 overflow-y-auto p-4 space-y-4 transition-colors ${
-                  dragOver ? 'bg-blue-50 border-2 border-dashed border-blue-300' : ''
-                }`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                {dragOver && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-blue-50 bg-opacity-90 z-10">
-                    <div className="text-center">
-                      <Paperclip size={48} className="mx-auto mb-4 text-blue-600" />
-                      <p className="text-lg font-medium text-blue-900">Drop files to share</p>
-                      <p className="text-sm text-blue-700">Files will be uploaded to the channel</p>
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {currentChannel?.messages.map((message) => (
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex space-x-3 group ${message.isPinned ? 'bg-yellow-50 p-2 rounded-lg' : ''}`}
+                  >
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-medium text-blue-600">
+                        {message.author.charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                  </div>
-                )}
-
-                {currentChannel?.isJoined ? (
-                  currentChannel.messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="group"
-                    >
-                      {message.type === 'system' ? (
-                        <div className="text-center">
-                          <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
-                            {message.content}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex space-x-3">
-                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-sm font-medium text-blue-600">
-                              {message.author.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-medium text-gray-900 text-sm">
-                                {message.author === userEmail ? 'You' : message.author.split('@')[0]}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {message.timestamp.toLocaleTimeString()}
-                              </span>
-                              {message.edited && (
-                                <span className="text-xs text-gray-400">(edited)</span>
-                              )}
-                            </div>
-                            
-                            {message.replyTo && (
-                              <div className="mb-2 pl-3 border-l-2 border-gray-300 bg-gray-50 rounded p-2">
-                                <p className="text-xs text-gray-600">Replying to message</p>
-                              </div>
-                            )}
-                            
-                            {message.type === 'file' ? (
-                              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 max-w-sm">
-                                <div className="flex items-center space-x-3">
-                                  <div className="p-2 bg-white rounded-lg border">
-                                    {getFileIcon(message.fileType || '')}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-gray-900 text-sm truncate">{message.fileName}</p>
-                                    <p className="text-xs text-gray-500">{formatFileSize(message.fileSize || 0)}</p>
-                                  </div>
-                                  <div className="flex space-x-1">
-                                    <motion.button
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                                    >
-                                      <Eye size={16} />
-                                    </motion.button>
-                                    <motion.button
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                                    >
-                                      <Download size={16} />
-                                    </motion.button>
-                                  </div>
-                                </div>
-                                {message.content !== `Shared file: ${message.fileName}` && (
-                                  <p className="text-gray-700 text-sm mt-2">{message.content}</p>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-gray-700 text-sm leading-relaxed">{message.content}</p>
-                            )}
-
-                            {/* Reactions */}
-                            {message.reactions && message.reactions.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {message.reactions.map((reaction, index) => (
-                                  <motion.button
-                                    key={index}
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => addReaction(message.id, reaction.emoji)}
-                                    className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs transition-colors ${
-                                      reaction.users.includes(userEmail || '')
-                                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                  >
-                                    <span>{reaction.emoji}</span>
-                                    <span>{reaction.count}</span>
-                                  </motion.button>
-                                ))}
-                              </div>
-                            )}
-
-                            {/* Message Actions */}
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-1">
-                              <div className="flex items-center space-x-1">
-                                {commonReactions.map((emoji) => (
-                                  <motion.button
-                                    key={emoji}
-                                    whileHover={{ scale: 1.1 }}
-                                    whileTap={{ scale: 0.9 }}
-                                    onClick={() => addReaction(message.id, emoji)}
-                                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded text-sm"
-                                  >
-                                    {emoji}
-                                  </motion.button>
-                                ))}
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => setReplyingTo(message.id)}
-                                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-                                >
-                                  <MessageCircle size={14} />
-                                </motion.button>
-                              </div>
-                            </div>
-                          </div>
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="font-medium text-gray-900">
+                          {message.author === userEmail ? 'You' : message.author.split('@')[0]}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {message.timestamp.toLocaleTimeString()}
+                        </span>
+                        {message.isPinned && <Pin size={12} className="text-yellow-500" />}
+                        {message.edited && <span className="text-xs text-gray-400">(edited)</span>}
+                      </div>
+                      
+                      {/* Reply indicator */}
+                      {message.replyTo && (
+                        <div className="mb-2 p-2 bg-gray-50 border-l-2 border-gray-300 rounded text-sm text-gray-600">
+                          Replying to previous message
                         </div>
                       )}
-                    </motion.div>
-                  ))
-                ) : (
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center">
-                      <Lock size={48} className="mx-auto mb-4 text-gray-400" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Join Channel to Chat</h3>
-                      <p className="text-gray-600 mb-4">You need to join this channel to see messages and participate.</p>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => joinChannel(activeChannel)}
-                        className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-                      >
-                        Join Channel
-                      </motion.button>
+
+                      {/* Message content */}
+                      {message.type === 'file' ? (
+                        <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 max-w-sm">
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              {getFileIcon(message.fileType || '')}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900 text-sm">{message.fileName}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(message.fileSize || 0)}</p>
+                            </div>
+                            <div className="flex space-x-1">
+                              <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                                <Eye size={16} />
+                              </button>
+                              <button className="p-1 text-blue-600 hover:bg-blue-50 rounded">
+                                <Download size={16} />
+                              </button>
+                            </div>
+                          </div>
+                          {message.content !== `Shared file: ${message.fileName}` && (
+                            <p className="text-gray-700 text-sm mt-2">{message.content}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-gray-700">{message.content}</p>
+                      )}
+
+                      {/* Reactions */}
+                      {message.reactions && message.reactions.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {message.reactions.map((reaction, index) => (
+                            <button
+                              key={index}
+                              onClick={() => addReaction(message.id, reaction.emoji)}
+                              className={`px-2 py-1 rounded-full text-xs flex items-center space-x-1 transition-colors ${
+                                reaction.users.includes(userEmail || 'Anonymous')
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              }`}
+                            >
+                              <span>{reaction.emoji}</span>
+                              <span>{reaction.users.length}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Message actions */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                      <button
+                        onClick={() => setShowEmojiPicker(message.id)}
+                        className="p-1 text-gray-500 hover:bg-gray-50 rounded"
+                      >
+                        <Smile size={14} />
+                      </button>
+                      <button
+                        onClick={() => setReplyingTo(message.id)}
+                        className="p-1 text-gray-500 hover:bg-gray-50 rounded"
+                      >
+                        <MessageCircle size={14} />
+                      </button>
+                      <button
+                        onClick={() => togglePinMessage(message.id)}
+                        className="p-1 text-gray-500 hover:bg-gray-50 rounded"
+                      >
+                        <Pin size={14} />
+                      </button>
+                      {message.author === userEmail && (
+                        <button
+                          onClick={() => deleteMessage(message.id)}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Emoji picker */}
+                    {showEmojiPicker === message.id && (
+                      <div className="absolute bg-white border border-gray-200 rounded-lg p-2 shadow-lg z-10 flex space-x-1">
+                        {emojis.map(emoji => (
+                          <button
+                            key={emoji}
+                            onClick={() => addReaction(message.id, emoji)}
+                            className="p-1 hover:bg-gray-100 rounded"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+
+                {/* Typing indicator */}
+                {isTyping.length > 0 && (
+                  <div className="flex items-center space-x-2 text-gray-500 text-sm">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+                    </div>
+                    <span>{isTyping.join(', ')} {isTyping.length === 1 ? 'is' : 'are'} typing...</span>
                   </div>
                 )}
+
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}
-              {currentChannel?.isJoined && (
-                <div className="p-4 border-t border-gray-200">
-                  {/* Reply indicator */}
-                  {replyingTo && (
-                    <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-                      <span className="text-sm text-blue-700">Replying to message</span>
+              <div className="p-4 border-t border-gray-200">
+                {/* Reply indicator */}
+                {replyingTo && (
+                  <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg flex justify-between items-center">
+                    <span className="text-sm text-blue-700">Replying to message</span>
+                    <button
+                      onClick={() => setReplyingTo(null)}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
+
+                {/* File preview */}
+                {selectedFile && (
+                  <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          {getFileIcon(selectedFile.type)}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{selectedFile.name}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(selectedFile.size)}</p>
+                        </div>
+                      </div>
                       <button
-                        onClick={() => setReplyingTo(null)}
-                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => setSelectedFile(null)}
+                        className="p-1 text-gray-500 hover:text-red-500 transition-colors"
                       >
                         <X size={16} />
                       </button>
                     </div>
-                  )}
-
-                  {/* File previews */}
-                  {selectedFiles.length > 0 && (
-                    <div className="mb-3 space-y-2">
-                      {selectedFiles.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                          <div className="flex items-center space-x-3">
-                            <div className="p-2 bg-blue-100 rounded-lg">
-                              {getFileIcon(file.type)}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900 text-sm">{file.name}</p>
-                              <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => removeFile(index)}
-                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex space-x-3">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleFileSelect}
-                      multiple
-                      className="hidden"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
-                    >
-                      <Paperclip size={20} />
-                    </motion.button>
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                      placeholder="Type a message..."
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                    />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={sendMessage}
-                      disabled={!newMessage.trim() && selectedFiles.length === 0}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Send size={20} />
-                    </motion.button>
                   </div>
+                )}
+                
+                <div className="flex space-x-3">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"
+                  >
+                    <Paperclip size={20} />
+                  </button>
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
+                    }}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() && !selectedFile}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send size={20} />
+                  </motion.button>
                 </div>
-              )}
+              </div>
             </div>
           ) : (
+            /* Notes Section */
             <div className="glass-card rounded-2xl p-6 h-full overflow-y-auto">
               <div className="grid gap-6">
                 {filteredNotes.map((note) => (
@@ -1184,35 +894,9 @@ const StudentChat: React.FC = () => {
                     
                     <div className="prose prose-sm max-w-none mb-4">
                       <div className="bg-gray-50 rounded-xl p-4 max-h-40 overflow-y-auto">
-                        <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">{note.content}</pre>
+                        <pre className="whitespace-pre-wrap text-sm text-gray-700">{note.content}</pre>
                       </div>
                     </div>
-
-                    {note.attachments && note.attachments.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Attachments</h4>
-                        <div className="space-y-2">
-                          {note.attachments.map((attachment, index) => (
-                            <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 rounded-lg">
-                              <div className="p-1 bg-white rounded">
-                                {getFileIcon(attachment.type)}
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
-                                <p className="text-xs text-gray-500">{formatFileSize(attachment.size)}</p>
-                              </div>
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                              >
-                                <Download size={16} />
-                              </motion.button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     
                     <div className="flex flex-wrap gap-2 mb-4">
                       {note.tags.map((tag, index) => (
@@ -1227,31 +911,23 @@ const StudentChat: React.FC = () => {
                         {note.timestamp.toLocaleDateString()}
                       </span>
                       <div className="flex space-x-2">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm"
-                        >
+                        <button className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm">
                           View Full
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm"
-                        >
+                        </button>
+                        <button className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm">
                           Download
-                        </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="p-1 text-gray-500 hover:bg-gray-50 rounded-lg transition-colors"
-                        >
-                          <Share2 size={16} />
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
                   </motion.div>
                 ))}
+
+                {filteredNotes.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>No study notes yet. Create your first note to get started!</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1331,14 +1007,12 @@ const StudentChat: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={createChannel}
                   className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                 >
                   Create
-                </motion.button>
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1413,87 +1087,11 @@ const StudentChat: React.FC = () => {
                 >
                   Cancel
                 </button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <button
                   onClick={createNote}
                   className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                 >
                   Share Notes
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Channel Settings Modal */}
-      <AnimatePresence>
-        {showChannelSettings && currentChannel && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 max-w-md w-full"
-            >
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Channel Settings</h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900">Notifications</span>
-                  <button
-                    onClick={() => toggleChannelNotifications(currentChannel.id)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      currentChannel.notifications ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        currentChannel.notifications ? 'translate-x-6' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-                
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Channel Info</h4>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div>Type: {currentChannel.type}</div>
-                    <div>Category: {currentChannel.category}</div>
-                    <div>Members: {currentChannel.memberCount}</div>
-                    <div>Created: {currentChannel.lastActivity.toLocaleDateString()}</div>
-                  </div>
-                </div>
-                
-                {currentChannel.id !== '1' && (
-                  <div className="border-t border-gray-200 pt-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        leaveChannel(currentChannel.id);
-                        setShowChannelSettings(false);
-                      }}
-                      className="w-full px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors"
-                    >
-                      Leave Channel
-                    </motion.button>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => setShowChannelSettings(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  Close
                 </button>
               </div>
             </motion.div>
