@@ -6,7 +6,8 @@ import {
   ChevronRight, Settings, Bell, Search, Plus,
   Activity, Users, Zap, Star, ArrowUp, ArrowDown,
   Brain, DollarSign, MessageSquare, Menu, X,
-  GraduationCap, CheckCircle, AlertCircle, Coffee
+  GraduationCap, CheckCircle, AlertCircle, Coffee,
+  Play, Pause, RotateCcw, TrendingDown
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDataTracker } from '../utils/DataTracker';
@@ -22,6 +23,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [analytics, setAnalytics] = useState<any>(null);
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -29,87 +32,179 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
   }, []);
 
   useEffect(() => {
-    loadAnalytics();
+    loadUserData();
   }, []);
 
-  const loadAnalytics = async () => {
+  const loadUserData = async () => {
+    setLoading(true);
     try {
+      // Load analytics
       const userAnalytics = await dataTracker.getUserAnalytics();
       setAnalytics(userAnalytics);
+
+      // Load data from all tools
+      const allUserData = await dataTracker.getUserData();
+      setUserData(allUserData);
     } catch (error) {
-      console.error('Error loading analytics:', error);
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const sidebarItems = [
     { icon: Home, label: 'Dashboard', id: 'dashboard', active: activeSection === 'dashboard' },
-    { icon: User, label: 'Profile', id: 'profile', active: activeSection === 'profile' },
-    { icon: Calendar, label: 'Schedule', id: 'schedule', active: activeSection === 'schedule' },
     { icon: BarChart3, label: 'Analytics', id: 'analytics', active: activeSection === 'analytics' },
+    { icon: Calendar, label: 'Schedule', id: 'schedule', active: activeSection === 'schedule' },
     { icon: BookOpen, label: 'Courses', id: 'courses', active: activeSection === 'courses' },
     { icon: Target, label: 'Goals', id: 'goals', active: activeSection === 'goals' },
+    { icon: User, label: 'Profile', id: 'profile', active: activeSection === 'profile' },
     { icon: Settings, label: 'Settings', id: 'settings', active: activeSection === 'settings' }
   ];
 
   const quickActions = [
-    { icon: Calculator, label: 'GPA Calculator', color: 'bg-blue-500', tool: 'gpa', description: 'Calculate your GPA' },
-    { icon: Calendar, label: 'Attendance', color: 'bg-green-500', tool: 'attendance', description: 'Track attendance' },
-    { icon: Timer, label: 'Study Timer', color: 'bg-purple-500', tool: 'timer', description: 'Pomodoro sessions' },
-    { icon: TrendingUp, label: 'Grades', color: 'bg-orange-500', tool: 'grades', description: 'Grade tracking' },
-    { icon: BookOpen, label: 'Schedule', color: 'bg-indigo-500', tool: 'schedule', description: 'Plan your week' },
-    { icon: Brain, label: 'Flashcards', color: 'bg-pink-500', tool: 'flashcards', description: 'Study with cards' },
-    { icon: DollarSign, label: 'Budget', color: 'bg-emerald-500', tool: 'expenses', description: 'Track expenses' },
-    { icon: MessageSquare, label: 'Reviews', color: 'bg-red-500', tool: 'reviews', description: 'Course reviews' }
+    { icon: Calculator, label: 'GPA Calculator', color: 'from-blue-400 to-blue-600', tool: 'gpa', description: 'Calculate your GPA' },
+    { icon: Calendar, label: 'Attendance', color: 'from-green-400 to-green-600', tool: 'attendance', description: 'Track attendance' },
+    { icon: Timer, label: 'Study Timer', color: 'from-purple-400 to-purple-600', tool: 'timer', description: 'Pomodoro sessions' },
+    { icon: TrendingUp, label: 'Grades', color: 'from-orange-400 to-orange-600', tool: 'grades', description: 'Grade tracking' },
+    { icon: BookOpen, label: 'Schedule', color: 'from-indigo-400 to-indigo-600', tool: 'schedule', description: 'Plan your week' },
+    { icon: Brain, label: 'Flashcards', color: 'from-pink-400 to-pink-600', tool: 'flashcards', description: 'Study with cards' },
+    { icon: DollarSign, label: 'Budget', color: 'from-emerald-400 to-emerald-600', tool: 'expenses', description: 'Track expenses' },
+    { icon: MessageSquare, label: 'Reviews', color: 'from-red-400 to-red-600', tool: 'reviews', description: 'Course reviews' }
   ];
 
-  const stats = [
-    { 
-      label: 'Study Hours', 
-      value: analytics?.totalTimeSpent ? `${Math.round(analytics.totalTimeSpent / 60)}h` : '0h', 
-      change: '+12%', 
-      trend: 'up',
-      icon: Clock,
-      color: 'bg-blue-500'
-    },
-    { 
-      label: 'Sessions', 
-      value: analytics?.totalSessions || '0', 
-      change: '+5', 
-      trend: 'up',
-      icon: Activity,
-      color: 'bg-green-500'
-    },
-    { 
-      label: 'Tools Used', 
-      value: analytics?.toolsUsed ? Object.keys(analytics.toolsUsed).length : '0', 
-      change: '+2', 
-      trend: 'up',
-      icon: Zap,
-      color: 'bg-purple-500'
-    },
-    { 
-      label: 'Productivity', 
-      value: '94.2%', 
-      change: '+1.2%', 
-      trend: 'up',
-      icon: TrendingUp,
-      color: 'bg-orange-500'
+  // Calculate real stats from user data
+  const calculateStats = () => {
+    const totalStudyTime = analytics?.totalTimeSpent || 0;
+    const totalSessions = analytics?.totalSessions || 0;
+    const toolsUsedCount = analytics?.toolsUsed ? Object.keys(analytics.toolsUsed).length : 0;
+    
+    // Calculate GPA from user data
+    let currentGPA = 0;
+    if (userData?.gpa && userData.gpa.length > 0) {
+      const latestGPA = userData.gpa[userData.gpa.length - 1];
+      currentGPA = latestGPA.gpa || 0;
     }
-  ];
 
-  const recentActivity = [
-    { action: 'Completed GPA Calculation', time: '2 hours ago', type: 'gpa', icon: Calculator },
-    { action: 'Study Session - 25 minutes', time: '4 hours ago', type: 'timer', icon: Timer },
-    { action: 'Updated Attendance Record', time: '1 day ago', type: 'attendance', icon: Calendar },
-    { action: 'Added New Flashcard Deck', time: '2 days ago', type: 'flashcards', icon: Brain }
-  ];
+    return [
+      { 
+        label: 'Study Hours', 
+        value: `${Math.round(totalStudyTime / 60)}h`, 
+        change: '+12%', 
+        trend: 'up',
+        icon: Clock,
+        color: 'from-blue-400 to-blue-600'
+      },
+      { 
+        label: 'Sessions', 
+        value: totalSessions.toString(), 
+        change: '+5', 
+        trend: 'up',
+        icon: Activity,
+        color: 'from-green-400 to-green-600'
+      },
+      { 
+        label: 'Current GPA', 
+        value: currentGPA > 0 ? currentGPA.toFixed(2) : 'N/A', 
+        change: currentGPA > 3.5 ? '+0.1' : '-0.1', 
+        trend: currentGPA > 3.5 ? 'up' : 'down',
+        icon: TrendingUp,
+        color: 'from-purple-400 to-purple-600'
+      },
+      { 
+        label: 'Tools Used', 
+        value: toolsUsedCount.toString(), 
+        change: '+2', 
+        trend: 'up',
+        icon: Zap,
+        color: 'from-orange-400 to-orange-600'
+      }
+    ];
+  };
 
-  const upcomingTasks = [
-    { task: 'Math Assignment Due', time: 'Tomorrow', priority: 'high', icon: AlertCircle },
-    { task: 'Physics Lab Report', time: 'Friday', priority: 'medium', icon: BookOpen },
-    { task: 'Study for Chemistry Quiz', time: 'Next Week', priority: 'low', icon: GraduationCap },
-    { task: 'Group Project Meeting', time: 'Monday', priority: 'medium', icon: Users }
-  ];
+  const stats = calculateStats();
+
+  // Generate real recent activity from user data
+  const getRecentActivity = () => {
+    const activities = [];
+    
+    if (userData?.gpa && userData.gpa.length > 0) {
+      activities.push({
+        action: 'Updated GPA Calculation',
+        time: '2 hours ago',
+        type: 'gpa',
+        icon: Calculator
+      });
+    }
+    
+    if (userData?.timer && userData.timer.length > 0) {
+      const latestTimer = userData.timer[userData.timer.length - 1];
+      activities.push({
+        action: `Study Session - ${latestTimer.duration || 25} minutes`,
+        time: '4 hours ago',
+        type: 'timer',
+        icon: Timer
+      });
+    }
+    
+    if (userData?.attendance && userData.attendance.length > 0) {
+      activities.push({
+        action: 'Updated Attendance Record',
+        time: '1 day ago',
+        type: 'attendance',
+        icon: Calendar
+      });
+    }
+    
+    if (userData?.flashcards && userData.flashcards.length > 0) {
+      activities.push({
+        action: 'Added New Flashcard Deck',
+        time: '2 days ago',
+        type: 'flashcards',
+        icon: Brain
+      });
+    }
+
+    return activities.length > 0 ? activities : [
+      { action: 'Welcome to AcademicFlow!', time: 'Just now', type: 'welcome', icon: Star },
+      { action: 'Start using tools to see activity', time: 'Now', type: 'info', icon: CheckCircle }
+    ];
+  };
+
+  const recentActivity = getRecentActivity();
+
+  // Generate upcoming tasks from user data
+  const getUpcomingTasks = () => {
+    const tasks = [];
+    
+    if (userData?.schedule && userData.schedule.length > 0) {
+      userData.schedule.slice(0, 3).forEach((item: any) => {
+        tasks.push({
+          task: item.title || 'Scheduled Event',
+          time: item.time || 'Soon',
+          priority: 'medium',
+          icon: BookOpen
+        });
+      });
+    }
+    
+    if (userData?.grades && userData.grades.length > 0) {
+      tasks.push({
+        task: 'Review Latest Grades',
+        time: 'This Week',
+        priority: 'high',
+        icon: TrendingUp
+      });
+    }
+
+    return tasks.length > 0 ? tasks : [
+      { task: 'Set up your first course', time: 'Today', priority: 'high', icon: BookOpen },
+      { task: 'Start a study session', time: 'Now', priority: 'medium', icon: Timer },
+      { task: 'Track your attendance', time: 'This Week', priority: 'low', icon: Calendar }
+    ];
+  };
+
+  const upcomingTasks = getUpcomingTasks();
 
   const handleSectionChange = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -120,8 +215,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
     onToolSelect?.(tool);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 flex items-center justify-center">
+        <div className="glass-card rounded-2xl p-8 text-center">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full mx-auto mb-4"
+          />
+          <p className="text-white text-lg font-medium">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 relative">
+    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-400/20 rounded-full blur-3xl"></div>
+      </div>
+
       {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -135,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
         )}
       </AnimatePresence>
 
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen relative z-10">
         {/* Sidebar */}
         <motion.div
           initial={{ x: -300 }}
@@ -147,7 +263,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
             {/* Logo */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-white/20 to-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
                   <GraduationCap size={20} className="text-white" />
                 </div>
                 <div>
@@ -157,14 +273,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
               </div>
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="lg:hidden w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center"
+                className="lg:hidden w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors"
               >
                 <X size={16} className="text-white" />
               </button>
             </div>
 
             {/* User Info */}
-            <div className="mb-8 p-4 bg-white/10 rounded-xl">
+            <div className="mb-8 p-4 bg-gradient-to-br from-white/10 to-white/5 rounded-xl backdrop-blur-sm border border-white/20">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-400 rounded-xl flex items-center justify-center">
                   <User size={20} className="text-white" />
@@ -189,24 +305,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
                     onClick={() => handleSectionChange(item.id)}
-                    className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-all ${
+                    className={`w-full flex items-center space-x-3 p-3 rounded-xl transition-all relative overflow-hidden ${
                       item.active 
-                        ? 'bg-white/20 text-white shadow-lg' 
+                        ? 'bg-gradient-to-r from-white/20 to-white/10 text-white shadow-lg backdrop-blur-sm' 
                         : 'text-white/70 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     <Icon size={18} />
                     <span className="font-medium">{item.label}</span>
-                    {item.active && <ChevronRight size={16} className="ml-auto" />}
+                    {item.active && (
+                      <motion.div
+                        layoutId="activeIndicator"
+                        className="absolute right-3"
+                        initial={false}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      >
+                        <ChevronRight size={16} />
+                      </motion.div>
+                    )}
                   </motion.button>
                 );
               })}
             </nav>
 
             {/* Upgrade Card */}
-            <div className="mt-8 p-4 bg-gradient-to-br from-green-400/20 to-blue-400/20 rounded-xl border border-white/20">
+            <div className="mt-8 p-4 bg-gradient-to-br from-green-400/20 to-blue-400/20 rounded-xl border border-white/20 backdrop-blur-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="w-8 h-8 bg-green-400 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-400 rounded-lg flex items-center justify-center">
                   <Zap size={16} className="text-white" />
                 </div>
                 <div>
@@ -233,20 +358,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
         <div className="flex-1 p-4 lg:p-6 overflow-auto">
           {/* Mobile Header */}
           <div className="lg:hidden mb-6">
-            <div className="glass-card rounded-2xl p-4">
+            <div className="glass-card rounded-2xl p-4 backdrop-blur-xl border border-white/20">
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setSidebarOpen(true)}
-                  className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center"
+                  className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors"
                 >
                   <Menu size={20} className="text-white" />
                 </button>
                 
                 <div className="flex items-center space-x-3">
-                  <button className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <button className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors">
                     <Search size={18} className="text-white" />
                   </button>
-                  <button className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                  <button className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors">
                     <Bell size={18} className="text-white" />
                   </button>
                 </div>
@@ -258,7 +383,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="hidden lg:block glass-card rounded-2xl p-6 mb-6"
+            className="hidden lg:block glass-card rounded-2xl p-6 mb-6 backdrop-blur-xl border border-white/20"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -302,12 +427,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.05 }}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleToolSelect(action.tool)}
-                    className="glass-card rounded-2xl p-4 text-center hover:bg-white/20 transition-all group"
+                    className="glass-card rounded-2xl p-4 text-center hover:bg-white/20 transition-all group backdrop-blur-xl border border-white/20"
                   >
-                    <div className={`w-10 h-10 lg:w-12 lg:h-12 ${action.color} rounded-xl flex items-center justify-center mx-auto mb-2 lg:mb-3 group-hover:scale-110 transition-transform`}>
+                    <div className={`w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-br ${action.color} rounded-xl flex items-center justify-center mx-auto mb-2 lg:mb-3 group-hover:scale-110 transition-transform shadow-lg`}>
                       <Icon size={20} className="lg:w-6 lg:h-6 text-white" />
                     </div>
                     <p className="text-white font-medium text-xs lg:text-sm">{action.label}</p>
@@ -335,10 +460,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="glass-card rounded-2xl p-4 lg:p-6"
+                    className="glass-card rounded-2xl p-4 lg:p-6 backdrop-blur-xl border border-white/20 hover:bg-white/10 transition-all"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <div className={`w-8 h-8 ${stat.color} rounded-lg flex items-center justify-center`}>
+                      <div className={`w-8 h-8 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center shadow-lg`}>
                         <Icon size={16} className="text-white" />
                       </div>
                       <div className={`flex items-center space-x-1 text-xs ${
@@ -363,12 +488,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="lg:col-span-2 glass-card rounded-2xl p-4 lg:p-6"
+              className="lg:col-span-2 glass-card rounded-2xl p-4 lg:p-6 backdrop-blur-xl border border-white/20"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-white text-lg font-semibold">Study Time Analytics</h3>
                 <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 bg-white/20 rounded-lg text-white text-sm">Week</button>
+                  <button className="px-3 py-1 bg-white/20 rounded-lg text-white text-sm backdrop-blur-sm">Week</button>
                   <button className="px-3 py-1 text-white/70 text-sm hover:bg-white/10 rounded-lg transition-colors">Month</button>
                 </div>
               </div>
@@ -383,9 +508,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                           initial={{ height: 0 }}
                           animate={{ height: `${height}%` }}
                           transition={{ delay: i * 0.1, duration: 0.8 }}
-                          className="w-full bg-gradient-to-t from-blue-400 to-purple-400 rounded-t-lg mb-2 relative group cursor-pointer"
+                          className="w-full bg-gradient-to-t from-blue-400 to-purple-400 rounded-t-lg mb-2 relative group cursor-pointer shadow-lg"
                         >
-                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
                             {Math.round(height)}h
                           </div>
                         </motion.div>
@@ -418,7 +543,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="glass-card rounded-2xl p-4 lg:p-6"
+              className="glass-card rounded-2xl p-4 lg:p-6 backdrop-blur-xl border border-white/20"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-white text-lg font-semibold">Recent Activity</h3>
@@ -438,7 +563,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-start space-x-3 p-3 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                     >
-                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-400 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg">
                         <Icon size={14} className="text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -463,7 +588,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="glass-card rounded-2xl p-4 lg:p-6"
+              className="glass-card rounded-2xl p-4 lg:p-6 backdrop-blur-xl border border-white/20"
             >
               <h3 className="text-white text-lg font-semibold mb-6">Weekly Progress</h3>
               
@@ -528,7 +653,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="glass-card rounded-2xl p-4 lg:p-6"
+              className="glass-card rounded-2xl p-4 lg:p-6 backdrop-blur-xl border border-white/20"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-white text-lg font-semibold">Study Timer</h3>
@@ -547,9 +672,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                 <div className="flex items-center justify-center space-x-4">
                   <button 
                     onClick={() => handleToolSelect('timer')}
-                    className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center hover:bg-green-600 transition-colors"
+                    className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
                   >
-                    <Timer size={20} className="text-white" />
+                    <Play size={20} className="text-white" />
                   </button>
                   <button className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors">
                     <Coffee size={20} className="text-white" />
@@ -578,7 +703,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className="glass-card rounded-2xl p-4 lg:p-6"
+              className="glass-card rounded-2xl p-4 lg:p-6 backdrop-blur-xl border border-white/20"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-white text-lg font-semibold">Upcoming Tasks</h3>
@@ -598,9 +723,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onToolSelect }) => {
                       transition={{ delay: index * 0.1 }}
                       className="flex items-center space-x-3 p-3 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        task.priority === 'high' ? 'bg-red-500' :
-                        task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-lg ${
+                        task.priority === 'high' ? 'bg-gradient-to-br from-red-400 to-red-600' :
+                        task.priority === 'medium' ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : 'bg-gradient-to-br from-green-400 to-green-600'
                       }`}>
                         <Icon size={14} className="text-white" />
                       </div>

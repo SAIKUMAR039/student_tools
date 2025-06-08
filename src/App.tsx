@@ -28,23 +28,23 @@ const AppContent: React.FC = () => {
       case 'dashboard':
         return <Dashboard onToolSelect={setActiveTool} />;
       case 'gpa':
-        return <GPACalculator />;
+        return <GPACalculator onBack={() => setActiveTool('dashboard')} />;
       case 'attendance':
-        return <AttendanceCalculator />;
+        return <AttendanceCalculator onBack={() => setActiveTool('dashboard')} />;
       case 'timer':
-        return <StudyTimer />;
+        return <StudyTimer onBack={() => setActiveTool('dashboard')} />;
       case 'grades':
-        return <GradeTracker />;
+        return <GradeTracker onBack={() => setActiveTool('dashboard')} />;
       case 'schedule':
-        return <SchedulePlanner />;
+        return <SchedulePlanner onBack={() => setActiveTool('dashboard')} />;
       case 'flashcards':
-        return <FlashcardStudy />;
+        return <FlashcardStudy onBack={() => setActiveTool('dashboard')} />;
       case 'expenses':
-        return <ExpenseTracker />;
+        return <ExpenseTracker onBack={() => setActiveTool('dashboard')} />;
       case 'reviews':
-        return <CourseReviews />;
+        return <CourseReviews onBack={() => setActiveTool('dashboard')} />;
       case 'chat':
-        return <StudentChat />;
+        return <StudentChat onBack={() => setActiveTool('dashboard')} />;
       default:
         return <Dashboard onToolSelect={setActiveTool} />;
     }
@@ -55,6 +55,7 @@ const AppContent: React.FC = () => {
   }
 
   const isDashboardOrHome = activeTool === 'dashboard' || activeTool === 'home';
+  const isToolPage = !isDashboardOrHome;
 
   return (
     <div className={`min-h-screen ${isDashboardOrHome ? 'bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600' : 'bg-gray-50'}`}>

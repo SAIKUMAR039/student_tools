@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, Timer, Coffee, BookOpen } from 'lucide-react';
+import { Play, Pause, RotateCcw, Timer, Coffee, BookOpen, ArrowLeft } from 'lucide-react';
 import { useDataTracker } from '../utils/DataTracker';
 
-const StudyTimer: React.FC = () => {
+interface StudyTimerProps {
+  onBack?: () => void;
+}
+
+const StudyTimer: React.FC<StudyTimerProps> = ({ onBack }) => {
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
@@ -17,10 +21,7 @@ const StudyTimer: React.FC = () => {
   const longBreak = 15 * 60; // 15 minutes
 
   useEffect(() => {
-    // Track tool usage when component mounts
     dataTracker.trackToolUsage('timer');
-    
-    // Load saved data
     loadSavedData();
   }, []);
 
@@ -37,37 +38,29 @@ const StudyTimer: React.FC = () => {
         }
       }, 1000);
     } else if (isActive && minutes === 0 && seconds === 0) {
-      // Timer finished
       setIsActive(false);
       
       if (!isBreak) {
-        // Work session completed
         const newSessions = sessions + 1;
         const newTotalTime = totalStudyTime + workTime;
         setSessions(newSessions);
         setTotalStudyTime(newTotalTime);
         
-        // Save completed session data
         saveSessionData('work', workTime / 60, true, newSessions, newTotalTime / 60);
         
-        // Start break
         if (newSessions % 4 === 0) {
-          // Long break after 4 sessions
           setMinutes(Math.floor(longBreak / 60));
           setSeconds(longBreak % 60);
         } else {
-          // Short break
           setMinutes(Math.floor(shortBreak / 60));
           setSeconds(shortBreak % 60);
         }
         setIsBreak(true);
       } else {
-        // Break completed, start new work session
         setMinutes(Math.floor(workTime / 60));
         setSeconds(workTime % 60);
         setIsBreak(false);
         
-        // Save break data
         const breakDuration = sessions % 4 === 0 ? longBreak : shortBreak;
         saveSessionData('break', breakDuration / 60, true, sessions, totalStudyTime / 60);
       }
@@ -80,13 +73,12 @@ const StudyTimer: React.FC = () => {
     try {
       const savedData = await dataTracker.getUserData('timer');
       if (savedData && savedData.length > 0) {
-        // Get the most recent data
         const latestData = savedData[savedData.length - 1];
         if (latestData['Total Sessions']) {
           setSessions(latestData['Total Sessions']);
         }
         if (latestData['Total Study Time']) {
-          setTotalStudyTime(latestData['Total Study Time'] * 60); // Convert back to seconds
+          setTotalStudyTime(latestData['Total Study Time'] * 60);
         }
       }
     } catch (error) {
@@ -134,189 +126,212 @@ const StudyTimer: React.FC = () => {
     : ((workTime - (minutes * 60 + seconds)) / workTime) * 100;
 
   return (
-    <div className="pt-24 lg:pt-32 px-4 max-w-4xl mx-auto">
-      <motion.div
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="text-center mb-8"
-      >
-        <Timer size={48} className="mx-auto mb-4 text-orange-600" />
-        <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-          Pomodoro Study Timer
-        </h1>
-        <p className="text-gray-600">
-          Boost your productivity with focused study sessions
-        </p>
-      </motion.div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-400 via-blue-500 to-purple-600 p-4 lg:p-6">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <motion.div
+          initial={{ y: -30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="flex items-center justify-between mb-8"
+        >
+          <div className="flex items-center space-x-4">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-colors backdrop-blur-sm"
+              >
+                <ArrowLeft size={20} className="text-white" />
+              </button>
+            )}
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2">
+                Pomodoro Study Timer
+              </h1>
+              <p className="text-white/70">
+                Boost your productivity with focused study sessions
+              </p>
+            </div>
+          </div>
+          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+            <Timer size={24} className="text-white" />
+          </div>
+        </motion.div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
-          <motion.div
-            layout
-            className="bg-white/80 backdrop-blur-xl rounded-2xl p-8 shadow-lg border border-white/20 text-center"
-          >
+        <div className="grid lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
             <motion.div
-              animate={{ scale: isActive ? [1, 1.02, 1] : 1 }}
-              transition={{ duration: 1, repeat: isActive ? Infinity : 0 }}
-              className="mb-8"
+              layout
+              className="glass-card rounded-2xl p-8 shadow-xl border border-white/20 text-center backdrop-blur-xl"
             >
-              <div className="relative w-64 h-64 mx-auto">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    stroke="#f3f4f6"
-                    strokeWidth="8"
-                    fill="none"
-                  />
-                  <motion.circle
-                    cx="50"
-                    cy="50"
-                    r="45"
-                    stroke={isBreak ? "#10b981" : "#f97316"}
-                    strokeWidth="8"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 45}`}
-                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-                    transition={{ duration: 0.5 }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <motion.div
-                    key={`${minutes}-${seconds}`}
-                    initial={{ scale: 1.1, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-6xl font-bold text-gray-900 mb-2"
-                  >
-                    {formatTime(minutes, seconds)}
-                  </motion.div>
-                  <div className={`text-lg font-medium ${isBreak ? 'text-green-600' : 'text-orange-600'}`}>
-                    {isBreak ? 'Break Time' : 'Focus Time'}
+              <motion.div
+                animate={{ scale: isActive ? [1, 1.02, 1] : 1 }}
+                transition={{ duration: 1, repeat: isActive ? Infinity : 0 }}
+                className="mb-8"
+              >
+                <div className="relative w-64 h-64 mx-auto">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke="rgba(255,255,255,0.2)"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <motion.circle
+                      cx="50"
+                      cy="50"
+                      r="45"
+                      stroke={isBreak ? "#10b981" : "#f97316"}
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 45}`}
+                      strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <motion.div
+                      key={`${minutes}-${seconds}`}
+                      initial={{ scale: 1.1, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="text-6xl font-bold text-white mb-2"
+                    >
+                      {formatTime(minutes, seconds)}
+                    </motion.div>
+                    <div className={`text-lg font-medium ${isBreak ? 'text-green-400' : 'text-orange-400'}`}>
+                      {isBreak ? 'Break Time' : 'Focus Time'}
+                    </div>
                   </div>
                 </div>
+              </motion.div>
+
+              <div className="flex justify-center space-x-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={toggleTimer}
+                  className={`flex items-center space-x-2 px-8 py-4 rounded-xl text-white font-medium transition-all shadow-lg ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-red-400 to-red-600 hover:from-red-500 hover:to-red-700' 
+                      : 'bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700'
+                  }`}
+                >
+                  {isActive ? <Pause size={20} /> : <Play size={20} />}
+                  <span>{isActive ? 'Pause' : 'Start'}</span>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={resetTimer}
+                  className="flex items-center space-x-2 px-6 py-4 rounded-xl bg-white/20 text-white font-medium hover:bg-white/30 transition-all backdrop-blur-sm"
+                >
+                  <RotateCcw size={20} />
+                  <span>Reset</span>
+                </motion.button>
               </div>
+
+              <motion.div 
+                className="mt-8 flex justify-center space-x-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-8 h-8 bg-blue-400 rounded-lg flex items-center justify-center mr-2">
+                      <BookOpen size={16} className="text-white" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-white">{sessions}</div>
+                  <div className="text-sm text-white/70">Sessions</div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="w-8 h-8 bg-green-400 rounded-lg flex items-center justify-center mr-2">
+                      <Coffee size={16} className="text-white" />
+                    </div>
+                  </div>
+                  <div className="text-2xl font-bold text-white">
+                    {Math.floor(sessions / 4)}
+                  </div>
+                  <div className="text-sm text-white/70">Long Breaks</div>
+                </div>
+              </motion.div>
             </motion.div>
+          </div>
 
-            <div className="flex justify-center space-x-4">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleTimer}
-                className={`flex items-center space-x-2 px-8 py-4 rounded-xl text-white font-medium transition-colors ${
-                  isActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
-                }`}
-              >
-                {isActive ? <Pause size={20} /> : <Play size={20} />}
-                <span>{isActive ? 'Pause' : 'Start'}</span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={resetTimer}
-                className="flex items-center space-x-2 px-6 py-4 rounded-xl bg-gray-500 text-white font-medium hover:bg-gray-600 transition-colors"
-              >
-                <RotateCcw size={20} />
-                <span>Reset</span>
-              </motion.button>
-            </div>
-
-            <motion.div 
-              className="mt-8 flex justify-center space-x-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+          <div className="lg:col-span-1">
+            <motion.div
+              layout
+              className="glass-card rounded-2xl p-6 shadow-xl border border-white/20 mb-6 backdrop-blur-xl"
             >
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <BookOpen size={20} className="text-blue-600 mr-2" />
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Today's Progress
+              </h3>
+              
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-blue-400 mb-1">
+                    {formatTotalTime(totalStudyTime)}
+                  </div>
+                  <div className="text-sm text-white/70">Total Study Time</div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">{sessions}</div>
-                <div className="text-sm text-gray-600">Sessions</div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <Coffee size={20} className="text-green-600 mr-2" />
+
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div className="p-3 bg-orange-400/20 rounded-lg border border-white/20">
+                    <div className="text-xl font-bold text-orange-400">{sessions}</div>
+                    <div className="text-xs text-white/70">Completed</div>
+                  </div>
+                  <div className="p-3 bg-blue-400/20 rounded-lg border border-white/20">
+                    <div className="text-xl font-bold text-blue-400">{sessions % 4}</div>
+                    <div className="text-xs text-white/70">Until Long Break</div>
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {Math.floor(sessions / 4)}
-                </div>
-                <div className="text-sm text-gray-600">Long Breaks</div>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={resetSession}
+                  className="w-full bg-white/20 text-white py-2 rounded-lg text-sm hover:bg-white/30 transition-colors backdrop-blur-sm"
+                >
+                  Reset Session
+                </motion.button>
               </div>
             </motion.div>
-          </motion.div>
-        </div>
 
-        <div className="lg:col-span-1">
-          <motion.div
-            layout
-            className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20 mb-6"
-          >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Today's Progress
-            </h3>
-            
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-1">
-                  {formatTotalTime(totalStudyTime)}
+            <motion.div
+              layout
+              className="glass-card rounded-2xl p-6 shadow-xl border border-white/20 backdrop-blur-xl"
+            >
+              <h3 className="text-lg font-semibold text-white mb-4">
+                How It Works
+              </h3>
+              
+              <div className="space-y-3 text-sm text-white/80">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-orange-400/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-orange-400 text-xs font-bold">1</span>
+                  </div>
+                  <div>Work for 25 minutes with full focus</div>
                 </div>
-                <div className="text-sm text-gray-600">Total Study Time</div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-green-400/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-green-400 text-xs font-bold">2</span>
+                  </div>
+                  <div>Take a 5-minute break</div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-400/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-blue-400 text-xs font-bold">3</span>
+                  </div>
+                  <div>After 4 sessions, take a 15-minute long break</div>
+                </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div className="p-3 bg-orange-50 rounded-lg">
-                  <div className="text-xl font-bold text-orange-600">{sessions}</div>
-                  <div className="text-xs text-orange-700">Completed</div>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <div className="text-xl font-bold text-blue-600">{sessions % 4}</div>
-                  <div className="text-xs text-blue-700">Until Long Break</div>
-                </div>
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={resetSession}
-                className="w-full bg-gray-100 text-gray-700 py-2 rounded-lg text-sm hover:bg-gray-200 transition-colors"
-              >
-                Reset Session
-              </motion.button>
-            </div>
-          </motion.div>
-
-          <motion.div
-            layout
-            className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-white/20"
-          >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              How It Works
-            </h3>
-            
-            <div className="space-y-3 text-sm text-gray-600">
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-orange-600 text-xs font-bold">1</span>
-                </div>
-                <div>Work for 25 minutes with full focus</div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-green-600 text-xs font-bold">2</span>
-                </div>
-                <div>Take a 5-minute break</div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-blue-600 text-xs font-bold">3</span>
-                </div>
-                <div>After 4 sessions, take a 15-minute long break</div>
-              </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </div>
